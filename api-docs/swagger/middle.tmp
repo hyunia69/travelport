@@ -1,0 +1,15 @@
+
+    <\!-- API Endpoint Information -->
+    <div class="info-section">
+        <h3>🌐 API 엔드포인트 정보</h3>
+        <div class="info-card" style="margin-top: 15px;">
+            <h4>ASP 파일 URL</h4>
+            <code style="font-size: 1.1em;">POST /db/kicc_ars_order_v3_batch.asp</code>
+            <ul style="margin-top: 15px;">
+                <li><strong>Production (HTTPS):</strong> <code>https://www.arspg.co.kr/ars/kicc/db/kicc_ars_order_v3_batch.asp</code></li>
+                <li><strong>Development (HTTP):</strong> <code>http://localhost/ars/kicc/db/kicc_ars_order_v3_batch.asp</code></li>
+                <li><strong>지원 메서드:</strong> POST (권장)</li>
+                <li><strong>배치 구분자:</strong> <code style="background:#ff6f00;color:white;padding:3px 8px;">^</code> (캐럿 기호)</li>
+            </ul>
+        </div>
+    </div>

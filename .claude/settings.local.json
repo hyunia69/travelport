@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not exist \".claude\" mkdir \".claude\")",
+      "Bash(dir:*)",
+      "Bash(python convert_to_euckr.py:*)",
+      "Bash(python -c:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

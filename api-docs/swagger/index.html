@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- DASAM ARS Batch API Documentation -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DASAM ARS Batch API Documentation v4.0</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .topbar {
+            background-color: #1a237e !important;
+        }
+
+        .topbar-wrapper img {
+            content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40"><text x="10" y="28" font-family="Arial" font-size="18" fill="white" font-weight="bold">DASAM ARS Batch</text></svg>');
+        }
+
+        .swagger-ui .topbar .download-url-wrapper {
+            display: none;
+        }
+
+        .custom-banner {
+            background: linear-gradient(135deg, #283593 0%, #3949ab 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .custom-banner h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .custom-banner p {
+            margin: 5px 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .custom-banner .version {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .custom-banner .batch-badge {
+            display: inline-block;
+            background: #ff6f00;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .info-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 8px;
+            border-left: 4px solid #283593;
+        }
+
+        .info-section h3 {
+            margin-top: 0;
+            color: #283593;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .info-card h4 {
+            margin: 0 0 10px 0;
+            color: #283593;
+            font-size: 1.1em;
+        }
+
+        .info-card ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .info-card li {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+
+        .info-card code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #d32f2f;
+        }
+
+        .quick-links {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .quick-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 25px;
+            background: #283593;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .quick-links a:hover {
+            background: #3949ab;
+        }
+
+        .quick-links a.secondary {
+            background: #757575;
+        }
+
+        .quick-links a.secondary:hover {
+            background: #616161;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 4px;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+
+        .feature-highlight {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 4px;
+        }
+
+        .feature-highlight h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+
+        .batch-example {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .batch-example .comment {
+            color: #78909c;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Banner -->
+    <div class="custom-banner">
+        <h1>DASAM ARS 배치 주문 생성 API</h1>
+        <p>한 번의 API 호출로 여러 건의 주문을 동시 처리하는 배치 결제 시스템</p>
+        <p style="font-size: 0.95em; margin-top: 10px;">JSON orders 배열 방식으로 구조화된 배치 요청 지원</p>
+        <span class="version">Version 4.0.0</span>
+        <span class="batch-badge">⚡ BATCH SUPPORT</span>
+        <span class="batch-badge" style="background: #4caf50;">✨ JSON ONLY</span>
+    </div>
+
+    <!-- Quick Links -->
+    <!-- <div class="quick-links">
+        <a href="#/Batch%20Order/createBatchOrder">📝 배치 API 바로가기</a>
+        <a href="index.html" class="secondary">🔙 단일 주문 API (v3.0)</a>
+        <a href="../BATCH_TESTING_GUIDE.md" target="_blank">📖 테스트 가이드</a>
+        <a href="../postman/DASAM_ARS_Batch_Collection.postman_collection.json" download>📥 Postman Collection</a>
+    </div> -->
+
+
+    <!-- API Endpoint Information -->
+    <div class="info-section">
+        <h3>🌐 API 엔드포인트 정보</h3>
+        <div class="info-card" style="border: 2px solid #4caf50;">
+            <h4>✨ JSON 배치 주문 API</h4>
+            <code style="font-size: 1em; display: block; margin-bottom: 10px;">POST /db/kicc_ars_order_v3_batch.asp</code>
+            <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                <strong>운영 서버 URL</strong><br>
+                <code style="font-size: 0.85em;">https://www.arspg.co.kr/ars/kicc/db/kicc_ars_order_v3_batch.asp</code>
+            </div>
+            <div style="margin-top: 8px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                <strong>개발 서버 URL</strong><br>
+                <code style="font-size: 0.85em;">https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp</code>
+            </div>
+            <ul style="margin-top: 10px;">
+                <li><strong>Content-Type:</strong> <code>application/json</code></li>
+                <li><strong>배치 형식:</strong> orders 배열</li>
+                <li><strong>사용처:</strong> 웹/모바일 앱, REST API 클라이언트</li>
+                <li><strong>특징:</strong> 구조화된 JSON 요청으로 타입 안전성과 직관성 제공</li>
+            </ul>
+        </div>
+    </div>
+    <!-- Request Parameters Table -->
+    <div class="info-section">
+        <h3>📋 요청 파라미터 상세</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #283593; color: white;">
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Type</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #f5f5f5;">
+                        <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">필수 파라미터 (Required)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">mode</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">요청 모드 (고정값: ars_data_add)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>ars_data_add</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">orders</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">array</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">주문 배열 (각 주문의 order_no, amount, cc_pord_desc 포함)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>[{order_no, amount, cc_pord_desc}, ...]</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">terminal_id</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">가맹점 터미널 ID (KICC 발급)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>05532206</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">request_type</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">요청 타입 (ARS=전화결제, SMS=문자인증, KTK=카카오톡)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>SMS</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">cc_name</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">고객명 (모든 주문에 공통 적용)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>홍길동</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">phone_no</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">전화번호 (모든 주문에 공통 적용, 숫자만, 하이픈 제거)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>01024020684</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">card_no</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">카드번호 (16자리)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>1234567890123456</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">expire_date</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">유효기간 YYMM (예: 2512 = 2025년 12월)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>2512</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">install_month</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">할부개월수 (00=일시불, 02-12=할부)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>00</code></td>
+                    </tr>
+
+
+                    <tr style="background: #f5f5f5;">
+                        <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">선택 파라미터 (Optional)</td>
+                    </tr>
+
+
+
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">cc_email</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">고객 이메일 (모든 주문에 공통 적용, 선택)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>customer@example.com</code></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">sms_message</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            문자나 카카오톡으로 전달할 사용자 정의 메시지 (선택).
+                            <br><small style="color: #666;">
+                            request_type이 SMS 또는 KTK인 경우에만 사용됩니다.(최대 90자)
+                            </small>
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            <code>고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">alert_show</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">string</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">응답 표시 여부 (Y=표시, N=미표시)</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>Y</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+            <strong style="color: #1976d2;">💡 JSON orders 배열</strong>: 각 주문 객체에 order_no, amount, cc_pord_desc 필드를 포함하여 배열로 전송
+            <br>
+            <small>✅ 구조화된 형식으로 타입 안전성과 가독성을 제공합니다</small>
+        </div>
+    </div>
+
+    <!-- Error Codes Section -->
+    <div class="info-section">
+        <h3>🚨 에러 코드 상세</h3>
+        <div style="margin-top: 15px;">
+            <p style="font-size: 0.95em; line-height: 1.6; margin-bottom: 15px;">
+                API 응답에서 반환되는 결과 코드는 JSON 형식으로 제공됩니다.
+                각 에러 코드의 의미와 해결 방법을 확인하세요.
+            </p>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: #283593; color: white;">
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">코드</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">메시지</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">설명</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">해결 방법</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f5f5f5;">
+                            <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">성공 코드</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0000</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">등록성공</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">주문이 성공적으로 생성됨</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">-</td>
+                        </tr>
+                        <tr style="background: #f5f5f5;">
+                            <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">일반 에러 코드</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0001</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">전송데이터구분오류</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">mode 파라미터가 'ars_data_add'가 아님</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">mode 파라미터를 'ars_data_add'로 설정</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0002</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">주문번호누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">order_no 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">유효한 주문번호를 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0003</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">가맹점터미널ID누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">terminal_id 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">KICC 발급 터미널ID 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0004</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">ARS타입누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">request_type 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">ARS, SMS 또는 KTK(카카오톡) 값 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0006</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">고객명누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">cc_name 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">고객명 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0007</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">상품명누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">cc_pord_desc 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">상품명 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0008</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">결제금액누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">amount 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">숫자 형식의 금액 전달</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0009</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">전화번호누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">phone_no 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">숫자만 포함된 전화번호 전달 (하이픈 제거)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0010</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">가맹점터미널ID불일치</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">데이터베이스에 등록되지 않은 terminal_id</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">KICC에서 발급한 유효한 터미널ID 사용</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0011</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">거래번호중복</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">동일한 terminal_id와 order_no 조합이 이미 존재</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">새로운 주문번호 생성하여 재시도</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0014</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">유효기간누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">expire_date 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">YYMM 형식의 유효기간 전달 (예: 2512)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0015</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">할부개월수누락</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">install_month 파라미터가 비어있음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">할부개월수 전달 (00=일시불, 02-12=할부)</td>
+                        </tr>
+                        <tr style="background: #f5f5f5;">
+                            <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">배치 주문 전용 에러 코드</td>
+                        </tr>
+                        <tr style="background: #fff9e6;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0012</strong> <span style="color: #ff6f00;">⚡</span></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">주문건수와 금액건수 불일치</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">order_no 개수와 amount 개수가 일치하지 않음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">배치 파라미터 개수 일치 확인 (예: order_no 3개 → amount도 3개)</td>
+                        </tr>
+                        <tr style="background: #fff9e6;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>0013</strong> <span style="color: #ff6f00;">⚡</span></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">주문건수와 상품명건수 불일치</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">order_no 개수와 cc_pord_desc 개수가 일치하지 않음</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">배치 파라미터 개수 일치 확인 (예: order_no 3개 → cc_pord_desc도 3개)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+                <strong style="color: #1976d2;">📌 참고사항</strong>
+                <ul style="margin: 10px 0 0 20px; font-size: 0.95em;">
+                    <li>코드 <strong>0012</strong>, <strong>0013</strong>은 배치 주문 전용 에러 코드입니다</li>
+                    <li>배치 주문에서 일부 주문이 실패해도 성공한 주문은 정상 저장됩니다</li>
+                    <li>에러 코드는 각 주문건별로 반환되며, 배치 요약에서 전체 성공/실패 건수를 확인할 수 있습니다</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON Request Examples Section -->
+    <div class="info-section">
+        <h3>📝 JSON 요청 예제</h3>
+        <p style="font-size: 0.95em; line-height: 1.6; margin-bottom: 15px;">
+            <code>kicc_ars_order_v3_batch.asp</code> 엔드포인트는 JSON orders 배열 형식으로 배치 주문을 처리합니다.
+        </p>
+
+        <div class="info-card">
+            <h4>JSON orders 배열 형식 - ARS 타입</h4>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                ARS 전화결제 주문 (사용자 정의 메시지 없음)
+            </p>
+            <div class="batch-example">
+{
+  "mode": "ars_data_add",
+  "terminal_id": "05532206",
+  "request_type": "ARS",
+  "cc_name": "홍길동",
+  "phone_no": "01012345678",
+  "card_no": "1234567890123456",
+  "expire_date": "2512",
+  "install_month": "00",
+  <strong style="color:#4caf50;">"orders": [
+    {"order_no": "ORD001", "amount": 1000, "cc_pord_desc": "상품A"},
+    {"order_no": "ORD002", "amount": 2000, "cc_pord_desc": "상품B"},
+    {"order_no": "ORD003", "amount": 3000, "cc_pord_desc": "상품C"}
+  ]</strong>
+}
+            </div>
+        </div>
+
+        <div class="info-card" style="margin-top: 15px;">
+            <h4>JSON orders 배열 형식 - SMS 타입 ✨ (사용자 정의 메시지 포함)</h4>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                SMS 인증 주문 + 사용자 정의 메시지 전송
+            </p>
+            <div class="batch-example">
+{
+  "mode": "ars_data_add",
+  "terminal_id": "05532206",
+  "request_type": "SMS",
+  "cc_name": "김철수",
+  "phone_no": "01087654321",
+  "card_no": "1234567890123456",
+  "expire_date": "2512",
+  "install_month": "00",
+  <strong style="color:#ff9800;">"sms_message": "고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다",</strong>
+  <strong style="color:#4caf50;">"orders": [
+    {"order_no": "SMS001", "amount": 50000, "cc_pord_desc": "항공권"},
+    {"order_no": "SMS002", "amount": 50000, "cc_pord_desc": "호텔"}
+  ]</strong>
+}
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px; font-size: 0.85em;">
+                <strong style="color: #f57c00;">📱 발송될 SMS 메시지:</strong><br>
+                <code style="color: #666;">고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다 김철수 님의 주문인증번호는[123456]입니다 02-3490-4411 로전화주십시오</code>
+            </div>
+        </div>
+
+        <div class="alert" style="margin-top: 15px;">
+            <div class="alert-title">⚠️ JSON 요청 시 주의사항</div>
+            <ul style="margin: 10px 0 0 20px; font-size: 0.95em;">
+                <li><strong>Content-Type 필수</strong>: <code>Content-Type: application/json</code> 헤더 반드시 설정</li>
+                <li><strong>orders 배열 필수</strong>: 각 주문 객체에 order_no, amount, cc_pord_desc 필드 포함 필요</li>
+                <li><strong>중첩 객체 미지원</strong>: Flat 구조만 가능 (예: <code>{"user": {"name": "홍길동"}}</code> 불가)</li>
+                <li><strong>특수문자 제한</strong>: 문자열 값에 <code>"</code>, <code>'</code>, <code>{</code>, <code>}</code> 포함 시 파싱 오류 가능</li>
+                <li><strong>amount 타입</strong>: 숫자 또는 문자열 모두 허용 (내부적으로 문자열 처리)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- JavaScript/Python/PHP Request Examples -->
+    <div class="info-section">
+        <h3>💻 프로그래밍 언어별 JSON 요청 예제</h3>
+
+        <div class="info-card">
+            <h4>JavaScript (fetch API)</h4>
+            <div class="batch-example" style="font-size: 0.85em;">
+<span class="comment">// JSON orders 배열 방식 - SMS 사용자 정의 메시지 포함</span>
+fetch('https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp', {
+  method: 'POST',
+  headers: {
+    <strong style="color:#4caf50;">'Content-Type': 'application/json'</strong>
+  },
+  body: JSON.stringify({
+    mode: 'ars_data_add',
+    terminal_id: '05532206',
+    request_type: 'SMS',
+    cc_name: '홍길동',
+    phone_no: '01012345678',
+    card_no: '1234567890123456',
+    expire_date: '2512',
+    install_month: '00',
+    sms_message: '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
+    <strong style="color:#4caf50;">orders: [
+      {order_no: 'ORD001', amount: 50000, cc_pord_desc: '항공권'},
+      {order_no: 'ORD002', amount: 50000, cc_pord_desc: '호텔'}
+    ]</strong>
+  })
+})
+.then(res => res.json())
+.then(data => {
+  console.log(`총 ${data.batch_summary.total}건 / 성공 ${data.batch_summary.success}건`);
+  data.req_result.forEach(result => {
+    console.log(`${result.order_no}: ${result.message}`);
+  });
+});
+            </div>
+        </div>
+
+        <div class="info-card" style="margin-top: 15px;">
+            <h4>Python (requests)</h4>
+            <div class="batch-example" style="font-size: 0.85em;">
+<span class="comment"># JSON orders 배열 방식 - SMS 사용자 정의 메시지 포함</span>
+import requests
+
+url = 'https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp'
+headers = {<strong style="color:#4caf50;">'Content-Type': 'application/json'</strong>}
+payload = {
+    'mode': 'ars_data_add',
+    'terminal_id': '05532206',
+    'request_type': 'SMS',
+    'cc_name': '홍길동',
+    'phone_no': '01012345678',
+    'card_no': '1234567890123456',
+    'expire_date': '2512',
+    'install_month': '00',
+    'sms_message': '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
+    <strong style="color:#4caf50;">'orders': [
+        {'order_no': 'ORD001', 'amount': 50000, 'cc_pord_desc': '항공권'},
+        {'order_no': 'ORD002', 'amount': 50000, 'cc_pord_desc': '호텔'}
+    ]</strong>
+}
+
+response = requests.post(url, json=payload, headers=headers)
+data = response.json()
+print(f"총 {data['batch_summary']['total']}건 / 성공 {data['batch_summary']['success']}건")
+            </div>
+        </div>
+
+        <div class="info-card" style="margin-top: 15px;">
+            <h4>PHP (cURL)</h4>
+            <div class="batch-example" style="font-size: 0.85em;">
+<span class="comment">// JSON orders 배열 방식 - SMS 사용자 정의 메시지 포함</span>
+$url = 'https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp';
+$data = [
+    'mode' => 'ars_data_add',
+    'terminal_id' => '05532206',
+    'request_type' => 'SMS',
+    'cc_name' => '홍길동',
+    'phone_no' => '01012345678',
+    'card_no' => '1234567890123456',
+    'expire_date' => '2512',
+    'install_month' => '00',
+    'sms_message' => '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
+    <strong style="color:#4caf50;">'orders' => [
+        ['order_no' => 'ORD001', 'amount' => 50000, 'cc_pord_desc' => '항공권'],
+        ['order_no' => 'ORD002', 'amount' => 50000, 'cc_pord_desc' => '호텔']
+    ]</strong>
+];
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [<strong style="color:#4caf50;">'Content-Type: application/json'</strong>]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$result = json_decode($response, true);
+echo "총 {$result['batch_summary']['total']}건 / 성공 {$result['batch_summary']['success']}건\n";
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Guide Section -->
+    <div class="info-section">
+        <h3>🔔 Notification 안내</h3>
+        <div style="margin-top: 15px;">
+            <p style="font-size: 0.95em; line-height: 1.6; margin-bottom: 15px;">
+                결제 완료 후 결과를 실시간으로 수신하기 위한 Notification(노티피케이션) 설정 방법과
+                연동 가이드를 확인하실 수 있습니다.
+            </p>
+            <div style="background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <h4 style="margin: 0 0 10px 0; color: #283593; font-size: 1.1em;">📚 EasyPay Notification 연동 가이드</h4>
+                <p style="margin: 10px 0; font-size: 0.95em;">
+                    결제 승인/취소 결과를 자동으로 수신하여 처리하는 방법에 대한 상세한 가이드입니다.
+                </p>
+                <a href="https://developer.easypay.co.kr/additional-services/notification"
+                   target="_blank"
+                   style="display: inline-block; margin-top: 10px; padding: 10px 20px; background: #283593; color: white; text-decoration: none; border-radius: 5px; font-size: 0.9em; transition: background 0.3s;">
+                    📖 Notification 가이드 보기 →
+                </a>
+                <p style="margin-top: 15px; font-size: 0.85em; color: #666;">
+                    <strong>주요 내용:</strong> Notification URL 설정, 파라미터 명세, 보안 검증, 예제 코드
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Feature Highlight -->
+    <div class="feature-highlight">
+        <h3>⚡ JSON 배치 주문 처리의 핵심 특징</h3>
+        <div class="batch-example">
+<span class="comment"># SMS 배치 주문 요청 예시 (사용자 정의 메시지 포함)</span>
+{
+  "mode": "ars_data_add",
+  "terminal_id": "05532206",
+  "request_type": "SMS",
+  "cc_name": "홍길동",
+  "phone_no": "01012345678",
+  "card_no": "1234567890123456",
+  "expire_date": "2512",
+  "install_month": "00",
+  <strong style="color:#ff9800;">"sms_message": "고객님, 총 결제금액은 120,000원 입니다",</strong>
+  "orders": [
+    {"order_no": "ORDER001", "amount": 50000, "cc_pord_desc": "프리미엄 서비스"},
+    {"order_no": "ORDER002", "amount": 30000, "cc_pord_desc": "베이직 서비스"},
+    {"order_no": "ORDER003", "amount": 40000, "cc_pord_desc": "스탠다드 서비스"}
+  ]
+}
+
+<span class="comment"># JSON 응답 예시: 3건의 주문이 한 번에 처리됨</span>
+<strong style="color:#4caf50;">{
+  "batch_summary": {"total": 3, "success": 3, "fail": 0},
+  "req_result": [
+    {"order_no": "ORDER001", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"},
+    {"order_no": "ORDER002", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"},
+    {"order_no": "ORDER003", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"}
+  ]
+}</strong>
+
+<span class="comment"># 발송되는 SMS 메시지 예시</span>
+<strong style="color:#ff9800;">"고객님, 총 결제금액은 120,000원 입니다 홍길동 님의 주문인증번호는[123456]입니다 02-3490-4411 로전화주십시오"</strong>
+        </div>
+    </div>
+
+    <!-- Important Notice -->
+    <div class="alert">
+        <div class="alert-title">⚠️ JSON 배치 API 중요 안내</div>
+        <ul style="margin: 10px 0 0 20px;">
+            <li><strong>orders 배열 필수</strong>: 각 주문 객체는 order_no, amount, cc_pord_desc 필드를 모두 포함해야 함</li>
+            <li><strong>부분 성공 지원</strong>: 일부 주문 실패 시에도 성공한 주문은 정상 저장됨</li>
+            <li><strong>SMS 배치 처리</strong>: 복수건 주문 시 하나의 통합 인증번호 생성 및 단일 SMS 발송</li>
+            <li><strong>사용자 정의 SMS 메시지</strong>: sms_message 파라미터는 선택 사항 (최대 90자 권장)</li>
+            <li><strong>주문번호 고유성</strong>: terminal_id + order_no 조합이 고유해야 함 (중복 시 0011 에러)</li>
+            <li><strong>JSON 형식 엄격</strong>: Content-Type을 application/json으로 설정하고 올바른 JSON 형식 사용</li>
+        </ul>
+    </div>
+
+    <!-- Swagger UI Container -->
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: "kicc_ars_api_v3_batch.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 3,
+                docExpansion: 'list',
+                filter: true,
+                showRequestHeaders: true,
+                supportedSubmitMethods: ['get', 'post'],
+                validatorUrl: null,
+                requestInterceptor: (request) => {
+                    // CORS 문제 해결을 위한 헤더 추가
+                    // 참고: 실제 CORS 해결은 서버 측(ASP 파일)에서 CORS 헤더를 설정해야 합니다
+                    if (request.url && request.url.startsWith('http')) {
+                        request.headers = request.headers || {};
+                        // 요청이 cross-origin인 경우를 대비
+                        if (!request.headers['Content-Type']) {
+                            request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                        }
+                    }
+                    return request;
+                },
+                responseInterceptor: (response) => {
+                    // 응답 처리
+                    return response;
+                }
+            });
+
+            window.ui = ui;
+        }
+    </script>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 40px 20px; background: #f5f5f5; margin-top: 50px;">
+        <p style="color: #666; margin: 0;">
+            <strong>DASAM ARS Batch API Documentation v4.0.0 (JSON Only)</strong><br>
+            © 2025 DASAM. All rights reserved.<br>
+            <small>기술 지원: support@example.com | 평일 09:00-18:00</small>
+        </p>
+        <p style="margin-top: 15px;">
+            <a href="../README.md" style="color: #283593; text-decoration: none;">API 문서</a> |
+            <a href="../TESTING_GUIDE.md" style="color: #283593; text-decoration: none;">테스트 가이드</a>
+        </p>
+    </div>
+</body>
+</html>

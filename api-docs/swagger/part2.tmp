@@ -1,0 +1,76 @@
+    <!-- Feature Highlight -->
+    <div class="feature-highlight">
+        <h3>⚡ 배치 주문 처리의 핵심 특징</h3>
+        <div class="batch-example">
+<span class="comment"># 배치 파라미터 예시 (^ 구분자 사용)</span>
+order_no=ORDER001<strong style="color:#ff6f00;">^</strong>ORDER002<strong style="color:#ff6f00;">^</strong>ORDER003
+amount=50000<strong style="color:#ff6f00;">^</strong>30000<strong style="color:#ff6f00;">^</strong>40000
+cc_pord_desc=프리미엄 서비스<strong style="color:#ff6f00;">^</strong>베이직 서비스<strong style="color:#ff6f00;">^</strong>스탠다드 서비스
+
+<span class="comment"># 결과: 3건의 주문이 한 번에 처리됨</span>
+<strong style="color:#4caf50;">BATCH_SUMMARY|총:3건|성공:3건|실패:0건</strong>
+ORDER001|01012345678|0000|등록성공
+ORDER002|01012345678|0000|등록성공
+ORDER003|01012345678|0000|등록성공
+        </div>
+    </div>
+
+    <!-- Important Notice -->
+    <div class="alert">
+        <div class="alert-title">⚠️ 배치 API 중요 안내</div>
+        <ul style="margin: 10px 0 0 20px;">
+            <li><strong>배열 길이 일치 필수</strong>: order_no, amount, cc_pord_desc 개수가 반드시 동일해야 함 (불일치 시 0012/0013 에러)</li>
+            <li><strong>부분 성공 지원</strong>: 일부 주문 실패 시에도 성공한 주문은 정상 저장됨</li>
+            <li><strong>배치 크기 제한</strong>: 성능을 위해 1회 요청 시 50건 이하 권장</li>
+            <li><strong>SMS 배치 처리</strong>: 각 주문별로 개별 인증번호 생성 및 발송</li>
+            <li><strong>주문번호 고유성</strong>: 배치 내에서도 주문번호 중복 불가</li>
+        </ul>
+    </div>
+
+    <!-- Swagger UI Container -->
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: "kicc_ars_api_v3_batch.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 3,
+                docExpansion: 'list',
+                filter: true,
+                showRequestHeaders: true,
+                supportedSubmitMethods: ['get', 'post'],
+                validatorUrl: null
+            });
+
+            window.ui = ui;
+        }
+    </script>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 40px 20px; background: #f5f5f5; margin-top: 50px;">
+        <p style="color: #666; margin: 0;">
+            <strong>KICC ARS Batch API Documentation v3.1.0</strong><br>
+            © 2025 KICC. All rights reserved.<br>
+            <small>기술 지원: support@example.com | 평일 09:00-18:00</small>
+        </p>
+        <p style="margin-top: 15px;">
+            <a href="index.html" style="color: #283593; text-decoration: none;">← 단일 주문 API (v3.0)</a> |
+            <a href="../README.md" style="color: #283593; text-decoration: none;">API 문서</a> |
+            <a href="../TESTING_GUIDE.md" style="color: #283593; text-decoration: none;">테스트 가이드</a>
+        </p>
+    </div>
+</body>
+</html>

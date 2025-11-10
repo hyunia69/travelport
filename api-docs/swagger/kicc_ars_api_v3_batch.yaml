@@ -1,0 +1,676 @@
+openapi: 3.0.3
+info:
+  title: DASAM ARS 배치 주문 생성 API
+  version: 4.0.0
+  description: |
+    # DASAM ARS/SMS/KTK 결제 배치 주문 생성 API
+
+    이 API는 DASAM ARS(자동응답시스템), SMS 및 KTK(카카오톡)를 통한 **배치 결제 주문**을 생성합니다.
+
+    ## 주요 기능
+    - **배치 주문 생성**: 한 번의 API 호출로 여러 건의 주문 생성
+    - ARS 전화결제 주문 생성
+    - SMS/KTK(카카오톡) 통합 인증번호 발송 및 주문 생성 (복수건 시 단일 SMS)
+    - 주문번호 중복 방지
+    - 실시간 가맹점 정보 검증
+
+    ## 배치 주문 형식
+    - **요청 형식**: JSON (application/json)
+    - **배치 처리**: orders 배열을 사용한 구조화된 방식
+    - **배치 가능 파라미터**: orders 배열 내 `order_no`, `amount`, `cc_pord_desc`
+    - **공통 파라미터**: 나머지 모든 파라미터 (카드번호, 고객명 등)
+
+    ### 배치 예시
+    ```json
+    {
+      "mode": "ars_data_add",
+      "terminal_id": "05532206",
+      "request_type": "ARS",
+      "cc_name": "홍길동",
+      "phone_no": "01012345678",
+      "card_no": "1234567890123456",
+      "expire_date": "2512",
+      "install_month": "00",
+      "sms_message": "고객님, 주문하신 상품 3건의 결제를 진행해주세요",
+      "orders": [
+        {"order_no": "order0001", "amount": 1000, "cc_pord_desc": "상품A"},
+        {"order_no": "order0002", "amount": 2000, "cc_pord_desc": "상품B"},
+        {"order_no": "order0003", "amount": 3000, "cc_pord_desc": "상품C"}
+      ]
+    }
+    ```
+
+    ## 에러 코드
+
+    API 응답은 **JSON 형식**으로 제공되며, 각 주문건의 `result_code`와 `message` 필드로 결과를 확인할 수 있습니다.
+
+    | 코드 | 메시지 | 설명 | 해결 방법 |
+    |------|--------|------|-----------|
+    | **0000** | 등록성공 | 주문이 성공적으로 생성됨 | - |
+    | **0001** | 전송데이터구분오류 | mode 파라미터가 'ars_data_add'가 아님 | mode 파라미터를 'ars_data_add'로 설정 |
+    | **0002** | 주문번호누락 | order_no 파라미터가 비어있음 | 유효한 주문번호를 전달 |
+    | **0003** | 가맹점터미널ID누락 | terminal_id 파라미터가 비어있음 | KICC 발급 터미널ID 전달 |
+    | **0004** | ARS타입누락 | request_type 파라미터가 비어있음 | ARS, SMS 또는 KTK(카카오톡) 값 전달 |
+    | **0005** | 카드번호누락 | card_no 파라미터가 비어있음 | 16자리 숫자 형식의 카드번호 전달 |
+    | **0006** | 고객명누락 | cc_name 파라미터가 비어있음 | 고객명 전달 |
+    | **0007** | 상품명누락 | cc_pord_desc 파라미터가 비어있음 | 상품명 전달 |
+    | **0008** | 결제금액누락 | amount 파라미터가 비어있음 | 숫자 형식의 금액 전달 |
+    | **0009** | 전화번호누락 | phone_no 파라미터가 비어있음 | 숫자만 포함된 전화번호 전달 (하이픈 제거) |
+    | **0010** | 가맹점터미널ID불일치 | 데이터베이스에 등록되지 않은 terminal_id | KICC에서 발급한 유효한 터미널ID 사용 |
+    | **0011** | 거래번호중복 | 동일한 terminal_id와 order_no 조합이 이미 존재 | 새로운 주문번호 생성하여 재시도 |
+    | **0014** | 유효기간누락 | expire_date 파라미터가 비어있음 | YYMM 형식의 유효기간 전달 (예: 2512) |
+    | **0015** | 할부개월수누락 | install_month 파라미터가 비어있음 | 할부개월수 전달 (00=일시불, 02-12=할부) |
+    | **0012** | 주문건수와 금액건수 불일치 | orders 배열 내 필수 필드 누락 | orders 배열의 모든 항목에 order_no, amount, cc_pord_desc 포함 확인 |
+    | **0013** | 주문건수와 상품명건수 불일치 | orders 배열 내 필수 필드 누락 | orders 배열의 모든 항목에 order_no, amount, cc_pord_desc 포함 확인 |
+
+    > **참고**:
+    > - 배치 주문에서 일부 주문이 실패해도 성공한 주문은 정상 저장됩니다
+    > - 에러 코드는 각 주문건별로 반환되며, 배치 요약에서 전체 성공/실패 건수를 확인할 수 있습니다
+
+servers:
+  - url: https://www.arspg.co.kr/ars/kicc/dev
+    description: Development Server (HTTPS)
+  - url: https://www.arspg.co.kr/ars/kicc
+    description: Production Server (HTTPS)
+  - url: http://www.arspg.co.kr/ars/kicc
+    description: Production Server (HTTP)
+  - url: http://localhost/ars/kicc
+    description: Local IIS Server (Windows)
+
+tags:
+  - name: Batch Order
+    description: 배치 주문 생성 및 관리
+
+paths:
+  /db/kicc_ars_order_v3_batch.asp:
+    post:
+      tags:
+        - Batch Order
+      summary: ARS/SMS/KTK 배치 주문 생성 (JSON)
+      description: |
+        한 번의 API 호출로 여러 건의 ARS 전화결제 또는 SMS/KTK 인증 주문을 생성합니다.
+        SMS/KTK 타입의 경우 복수건 주문 시 하나의 통합 인증번호로 단일 SMS가 발송됩니다.
+
+        **✨ 이 엔드포인트는 JSON 요청만 지원합니다.**
+
+        ### JSON 배치 요청 형식
+
+        JSON 요청은 `orders` 배열을 사용하여 구조화된 배치 처리를 제공합니다:
+
+        ```json
+        {
+          "mode": "ars_data_add",
+          "terminal_id": "TERM001",
+          "request_type": "ARS",
+          "cc_name": "홍길동",
+          "phone_no": "01012345678",
+          "card_no": "1234567890123456",
+          "expire_date": "2512",
+          "install_month": "00",
+          "sms_message": "고객님, 주문하신 상품의 결제를 진행해주세요",
+          "orders": [
+            {"order_no": "ORD001", "amount": 1000, "cc_pord_desc": "상품A"},
+            {"order_no": "ORD002", "amount": 2000, "cc_pord_desc": "상품B"}
+          ]
+        }
+        ```
+
+        ### 비즈니스 로직
+
+        **배치 주문 처리 흐름**
+        1. JSON 요청 파싱 및 orders 배열 추출
+        2. orders 배열의 모든 항목에 필수 필드 존재 검증
+        3. 가맹점 정보 조회 (1회만)
+        4. SMS 타입인 경우 배치 전체에 대해 통합 인증번호 생성 및 단일 SMS 발송
+        5. 각 주문건 순차 처리:
+           - 주문번호 중복 체크
+           - 주문 정보 저장
+        6. 배치 결과 요약 반환 (JSON)
+
+        **ARS 배치 주문 (request_type=ARS)**
+        - 여러 주문건 동시 생성
+        - 각 주문건은 독립적으로 검증 및 저장
+
+        **SMS/KTK 배치 주문 (request_type=SMS 또는 KTK)**
+        - 배치 주문 전체에 대해 하나의 통합 인증번호 자동 생성
+        - 단일 SMS 발송 (복수건을 하나의 문자로 통합 발송)
+        - 모든 주문은 동일한 인증번호 공유
+        - **사용자 정의 메시지 (sms_message)**: 선택적으로 제공 시 기본 인증번호 메시지 앞에 추가됨
+          - 예: "고객님, 결제금액 100,000원 입니다 [고객명] 님의 주문인증번호는[XXXXXX]입니다..."
+
+        ### 주의사항
+        - orders 배열의 모든 항목에는 order_no, amount, cc_pord_desc가 필수
+        - 각 주문번호는 가맹점별로 고유해야 함 (중복 시 해당 건만 0011 에러)
+        - 일부 주문 실패 시에도 성공한 주문은 정상 저장됨
+        - 전화번호는 숫자만 입력 (하이픈 제거)
+        - sms_message는 선택 파라미터로 SMS/KTK 타입에서만 유효 (최대 90자 권장)
+
+      operationId: createBatchOrderJson
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mode
+                - terminal_id
+                - request_type
+                - cc_name
+                - phone_no
+                - card_no
+                - expire_date
+                - install_month
+                - orders
+              properties:
+                mode:
+                  type: string
+                  enum: [ars_data_add]
+                  description: 요청 모드 (고정값)
+                  example: ars_data_add
+
+                terminal_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                  description: 가맹점 터미널 ID (KICC 발급)
+                  example: "05532206"
+
+                request_type:
+                  type: string
+                  enum: [ARS, SMS, KTK]
+                  description: 요청 타입 (ARS=전화결제, SMS=문자인증, KTK=카카오톡)
+                  example: ARS
+
+                cc_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  description: 고객명 (모든 주문에 공통 적용)
+                  example: 홍길동
+
+                phone_no:
+                  type: string
+                  pattern: '^\d{10,11}$'
+                  description: 고객 전화번호 (모든 주문에 공통 적용, 숫자만)
+                  example: "01012345678"
+
+                card_no:
+                  type: string
+                  minLength: 16
+                  maxLength: 16
+                  pattern: '^\d{16}$'
+                  description: 카드번호 (모든 주문에 공통 적용, 필수, 16자리)
+                  example: "1234567890123456"
+
+                expire_date:
+                  type: string
+                  minLength: 4
+                  maxLength: 4
+                  pattern: '^[0-9]{4}$'
+                  description: "유효기간 YYMM (모든 주문에 공통 적용, 필수)"
+                  example: "2512"
+
+                install_month:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  pattern: '^(00|0[2-9]|1[0-2])$'
+                  description: 할부개월수 (모든 주문에 공통 적용, 필수, 00=일시불)
+                  example: "00"
+
+                cc_email:
+                  type: string
+                  format: email
+                  description: 고객 이메일 주소 (선택)
+                  example: customer@example.com
+
+                sms_message:
+                  type: string
+                  maxLength: 90
+                  description: |
+                    문자나 카카오톡으로 전달할 사용자 정의 메시지 (선택).
+                    request_type이 SMS 또는 KTK인 경우에만 사용되며,
+                    기본 인증번호 메시지 앞에 추가됩니다.
+                  example: "고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다"
+
+                alert_show:
+                  type: string
+                  enum: [Y, N]
+                  default: Y
+                  description: 응답 표시 여부
+                  example: Y
+
+                orders:
+                  type: array
+                  minItems: 1
+                  description: 주문 배열 (필수)
+                  items:
+                    type: object
+                    required:
+                      - order_no
+                      - amount
+                      - cc_pord_desc
+                    properties:
+                      order_no:
+                        type: string
+                        minLength: 1
+                        description: 주문번호
+                        example: "ORD20250118001"
+                      amount:
+                        description: 결제금액 (숫자 또는 문자열 모두 허용)
+                        oneOf:
+                          - type: integer
+                            minimum: 1
+                            example: 1000
+                          - type: string
+                            pattern: '^\d+$'
+                            example: "1000"
+                      cc_pord_desc:
+                        type: string
+                        minLength: 1
+                        description: 상품명
+                        example: "프리미엄 서비스"
+
+            examples:
+              json_orders_array:
+                summary: JSON 배치 요청 (3건)
+                description: 구조화된 orders 배열 사용 (ARS 타입에서는 sms_message가 무시됨)
+                value:
+                  mode: ars_data_add
+                  terminal_id: "05532206"
+                  request_type: ARS
+                  cc_name: 홍길동
+                  phone_no: "01012345678"
+                  card_no: "1234567890123456"
+                  expire_date: "2512"
+                  install_month: "00"
+                  sms_message: "고객님, ARS 타입에서는 이 메시지가 무시됩니다"
+                  cc_email: customer@example.com
+                  alert_show: Y
+                  orders:
+                    - order_no: "ORD20250118001"
+                      amount: 50000
+                      cc_pord_desc: "프리미엄 서비스"
+                    - order_no: "ORD20250118002"
+                      amount: 30000
+                      cc_pord_desc: "베이직 서비스"
+                    - order_no: "ORD20250118003"
+                      amount: 40000
+                      cc_pord_desc: "스탠다드 서비스"
+
+              sms_batch_order:
+                summary: SMS 배치 주문 (2건) - 사용자 정의 메시지 포함
+                description: 복수건 주문에 대해 하나의 통합 인증번호로 단일 SMS 발송 (사용자 정의 메시지 추가)
+                value:
+                  mode: ars_data_add
+                  terminal_id: "05532206"
+                  request_type: SMS
+                  cc_name: 김철수
+                  phone_no: "01012345678"
+                  card_no: "1234567890123456"
+                  expire_date: "2512"
+                  install_month: "00"
+                  sms_message: "고객님, 트래블포트에서 결제하실 총 금액은 30,000원 입니다"
+                  alert_show: Y
+                  orders:
+                    - order_no: "SMS20250118001"
+                      amount: 10000
+                      cc_pord_desc: "상품A"
+                    - order_no: "SMS20250118002"
+                      amount: 20000
+                      cc_pord_desc: "상품B"
+
+              ktk_batch_order:
+                summary: 카카오톡(KTK) 배치 주문 (3건) - 사용자 정의 메시지 포함
+                description: 복수건 주문에 대해 하나의 통합 인증번호로 카카오톡 발송 (사용자 정의 메시지 추가)
+                value:
+                  mode: ars_data_add
+                  terminal_id: "05532206"
+                  request_type: KTK
+                  cc_name: 이영희
+                  phone_no: "01098765432"
+                  card_no: "1234567890123456"
+                  expire_date: "2612"
+                  install_month: "03"
+                  sms_message: "안녕하세요! 여행 예약 결제 안내드립니다. 총 금액 150,000원"
+                  cc_email: younghee@example.com
+                  alert_show: Y
+                  orders:
+                    - order_no: "KTK20250118001"
+                      amount: 50000
+                      cc_pord_desc: "항공권"
+                    - order_no: "KTK20250118002"
+                      amount: 70000
+                      cc_pord_desc: "호텔 예약"
+                    - order_no: "KTK20250118003"
+                      amount: 30000
+                      cc_pord_desc: "렌터카"
+
+      responses:
+        '200':
+          description: |
+            API 호출 성공 (성공/실패 여부는 result_code로 판단)
+
+            **응답 형식**: JSON
+
+            응답은 두 가지 주요 섹션으로 구성됩니다:
+            - `batch_summary`: 배치 처리 요약 (총 건수, 성공 건수, 실패 건수)
+            - `req_result`: 각 주문건의 처리 결과 배열
+
+            **파싱 방법**:
+            ```javascript
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: 'ars_data_add',
+                terminal_id: '05532206',
+                orders: [/* orders array */]
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              // 배치 요약 정보
+              const summary = data.batch_summary;
+              console.log(`총 ${summary.total}건 / 성공 ${summary.success}건 / 실패 ${summary.fail}건`);
+
+              // 각 주문건 처리
+              data.req_result.forEach(result => {
+                if (result.result_code === "0000") {
+                  console.log(`✅ 성공: ${result.order_no}`);
+                } else {
+                  console.error(`❌ 실패: ${result.order_no} - ${result.message}`);
+                }
+              });
+            });
+            ```
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchOrderResponse'
+
+              examples:
+                batch_success_all:
+                  summary: 배치 전체 성공 (3건)
+                  value:
+                    batch_summary:
+                      total: 3
+                      success: 3
+                      fail: 0
+                    req_result:
+                      - order_no: "ORD20250118001"
+                        phone_no: "01012345678"
+                        result_code: "0000"
+                        message: "등록성공"
+                      - order_no: "ORD20250118002"
+                        phone_no: "01012345678"
+                        result_code: "0000"
+                        message: "등록성공"
+                      - order_no: "ORD20250118003"
+                        phone_no: "01012345678"
+                        result_code: "0000"
+                        message: "등록성공"
+
+                batch_partial_success:
+                  summary: 배치 부분 성공 (2건 성공, 1건 중복 실패)
+                  value:
+                    batch_summary:
+                      total: 3
+                      success: 2
+                      fail: 1
+                    req_result:
+                      - order_no: "ORD20250118001"
+                        phone_no: "01012345678"
+                        result_code: "0000"
+                        message: "등록성공"
+                      - order_no: "ORD20250118002"
+                        phone_no: "01012345678"
+                        result_code: "0000"
+                        message: "등록성공"
+                      - order_no: "ORD20250118003"
+                        phone_no: "01012345678"
+                        result_code: "0011"
+                        message: "거래번호중복"
+
+                error_0010:
+                  summary: 가맹점터미널ID불일치 (0010)
+                  value:
+                    batch_summary:
+                      total: 0
+                      success: 0
+                      fail: 0
+                    req_result:
+                      - order_no: ""
+                        phone_no: "01012345678"
+                        result_code: "0010"
+                        message: "가맹점터미널ID불일치"
+
+components:
+  schemas:
+    BatchSummary:
+      type: object
+      required:
+        - total
+        - success
+        - fail
+      properties:
+        total:
+          type: integer
+          description: 총 주문 건수
+          example: 3
+        success:
+          type: integer
+          description: 성공 건수
+          example: 2
+        fail:
+          type: integer
+          description: 실패 건수
+          example: 1
+
+    OrderResult:
+      type: object
+      required:
+        - order_no
+        - phone_no
+        - result_code
+        - message
+      properties:
+        order_no:
+          type: string
+          description: 주문번호
+          example: "ORD20250118001"
+        phone_no:
+          type: string
+          description: 전화번호
+          example: "01024020684"
+        result_code:
+          type: string
+          description: 결과 코드 (4자리)
+          pattern: '^\d{4}$'
+          example: "0000"
+        message:
+          type: string
+          description: 결과 메시지
+          example: "등록성공"
+
+    BatchOrderResponse:
+      type: object
+      required:
+        - batch_summary
+        - req_result
+      properties:
+        batch_summary:
+          $ref: '#/components/schemas/BatchSummary'
+        req_result:
+          type: array
+          description: 각 주문건의 처리 결과 목록
+          items:
+            $ref: '#/components/schemas/OrderResult'
+      example:
+        batch_summary:
+          total: 3
+          success: 2
+          fail: 1
+        req_result:
+          - order_no: "ORD20250118001"
+            phone_no: "01024020684"
+            result_code: "0000"
+            message: "등록성공"
+          - order_no: "ORD20250118002"
+            phone_no: "01024020684"
+            result_code: "0000"
+            message: "등록성공"
+          - order_no: "ORD20250118003"
+            phone_no: "01024020684"
+            result_code: "0011"
+            message: "거래번호중복"
+
+# 에러 코드 매핑 테이블
+x-error-codes:
+  - code: "0000"
+    message: 등록성공
+    description: 주문이 성공적으로 생성됨
+    http_status: 200
+    severity: success
+
+  - code: "0001"
+    message: 전송데이터구분오류
+    description: mode 파라미터가 'ars_data_add'가 아님
+    solution: mode 파라미터를 'ars_data_add'로 설정
+    severity: error
+
+  - code: "0002"
+    message: 주문번호누락
+    description: order_no 파라미터가 비어있음
+    solution: 유효한 주문번호를 전달
+    severity: error
+
+  - code: "0003"
+    message: 가맹점터미널ID누락
+    description: terminal_id 파라미터가 비어있음
+    solution: KICC 발급 터미널ID 전달
+    severity: error
+
+  - code: "0004"
+    message: ARS타입누락
+    description: request_type 파라미터가 비어있음
+    solution: "ARS, SMS 또는 KTK 값 전달"
+    severity: error
+
+  - code: "0005"
+    message: 카드번호누락
+    description: card_no 파라미터가 비어있음
+    solution: 16자리 숫자 형식의 카드번호 전달
+    severity: error
+
+  - code: "0006"
+    message: 고객명누락
+    description: cc_name 파라미터가 비어있음
+    solution: 고객명 전달
+    severity: error
+
+  - code: "0007"
+    message: 상품명누락
+    description: cc_pord_desc 파라미터가 비어있음
+    solution: 상품명 전달
+    severity: error
+
+  - code: "0008"
+    message: 결제금액누락
+    description: amount 파라미터가 비어있음
+    solution: 숫자 형식의 금액 전달
+    severity: error
+
+  - code: "0009"
+    message: 전화번호누락
+    description: phone_no 파라미터가 비어있음
+    solution: "숫자만 포함된 전화번호 전달 (하이픈 제거)"
+    severity: error
+
+  - code: "0010"
+    message: 가맹점터미널ID불일치
+    description: 데이터베이스에 등록되지 않은 terminal_id
+    solution: KICC에서 발급한 유효한 터미널ID 사용
+    severity: error
+
+  - code: "0011"
+    message: 거래번호중복
+    description: 동일한 terminal_id와 order_no 조합이 이미 존재
+    solution: 새로운 주문번호 생성하여 재시도
+    severity: error
+
+  - code: "0014"
+    message: 유효기간누락
+    description: expire_date 파라미터가 비어있음
+    solution: "YYMM 형식의 유효기간 전달 (예: 2512)"
+    severity: error
+
+  - code: "0015"
+    message: 할부개월수누락
+    description: install_month 파라미터가 비어있음
+    solution: "할부개월수 전달 (00=일시불, 02-12=할부)"
+    severity: error
+
+  - code: "0012"
+    message: 주문건수와 금액건수 불일치
+    description: orders 배열 내 필수 필드 누락
+    solution: "orders 배열의 모든 항목에 order_no, amount, cc_pord_desc 포함 확인"
+    severity: error
+    batch_only: true
+
+  - code: "0013"
+    message: 주문건수와 상품명건수 불일치
+    description: orders 배열 내 필수 필드 누락
+    solution: "orders 배열의 모든 항목에 order_no, amount, cc_pord_desc 포함 확인"
+    severity: error
+    batch_only: true
+
+# 비즈니스 로직 설명
+x-business-logic:
+  batch_processing:
+    description: 배치 주문 처리 방식
+    format: "JSON orders 배열"
+    batch_parameters: ["order_no", "amount", "cc_pord_desc"]
+    common_parameters: ["cc_name", "phone_no", "card_no", "expire_date", "install_month", "cc_email"]
+    validation: "orders 배열의 모든 항목에 필수 필드 포함 확인"
+    processing: "각 주문건을 순차적으로 처리, 일부 실패 시에도 성공한 주문은 저장됨"
+
+  order_number_generation:
+    description: 주문번호는 가맹점에서 자체 생성하며, 가맹점별로 고유해야 함
+    pattern: "권장 형식 - ORD + YYYYMMDD + 순번 (예: ORD20250118001)"
+    validation: terminal_id + order_no 조합으로 중복 체크
+    batch_example: '{"orders": [{"order_no": "ORD20250118001"}, {"order_no": "ORD20250118002"}]}'
+
+  sms_auth_number:
+    description: SMS/KTK 배치 요청 시 전체 배치에 대해 하나의 통합 인증번호 생성
+    format: 숫자 6자리 (000100부터 시작)
+    generation: sp_getKiccAuthNo 저장 프로시저로 순차 생성
+    sms_content: "[고객명] 님의 주문인증번호는[XXXXXX]입니다 02-3490-XXXX 로전화주십시오"
+    batch_behavior: "복수건 주문 시 하나의 통합 인증번호로 단일 SMS 발송"
+
+  sms_custom_message:
+    description: SMS/KTK 사용자 정의 메시지 기능
+    parameter: sms_message
+    optional: true
+    max_length: 90
+    format: "UTF-8 한글 지원"
+    usage: "request_type이 SMS 또는 KTK인 경우에만 적용"
+    message_structure: "[사용자 정의 메시지] + [기본 인증번호 메시지] + [콜백번호]"
+    example_default: "홍길동 님의 주문인증번호는[123456]입니다 02-3490-4411 로전화주십시오"
+    example_custom: "고객님, 결제금액 100,000원 입니다 홍길동 님의 주문인증번호는[123456]입니다 02-3490-4411 로전화주십시오"
+
+  duplicate_prevention:
+    description: 주문번호 중복 방지 메커니즘
+    check: KICC_SHOP_ORDER 테이블에서 terminal_id + order_no 조회
+    result: 존재하면 해당 주문건만 0011 에러, 다른 주문건은 정상 처리
+    batch_handling: "배치 주문에서 일부 중복 발생 시 성공한 주문만 저장"
+
+  merchant_validation:
+    description: 가맹점 정보 검증
+    procedure: sp_getKiccShopInfo 저장 프로시저 호출
+    fields: terminal_nm, terminal_id, terminal_pw, ars_dnis, admin_id, admin_name
+    failure: 가맹점 정보 없으면 전체 배치 주문 실패 (0010 에러)
+    batch_optimization: "배치 주문 시 가맹점 정보는 1회만 조회"

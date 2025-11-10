@@ -1,0 +1,63 @@
+1. kicc_ars_order_v3_batch.asp 의 응답 형식을 XML 또는 JSON 구조로 출력
+
+
+예시 :
+
+{
+
+  "batch_summary": {
+
+    "total": 3,
+
+    "success": 0,
+
+    "fail": 3
+
+  },
+
+  "req_result": [
+
+    {
+
+      "order_no": "ORD20250118001",
+
+      "phone_no": "01024020684",
+
+      "result_code": "0011",
+
+      "message": "거래번호중복"
+
+    },
+
+    {
+
+      "order_no": "ORD20250118002",
+
+      "phone_no": "01024020684",
+
+      "result_code": "0011",
+
+      "message": "거래번호중복"
+
+    },
+
+    {
+
+      "order_no": "ORD20250118003",
+
+      "phone_no": "01024020684",
+
+      "result_code": "0011",
+
+      "message": "거래번호중복"
+
+    }
+
+  ]
+
+}
+
+
+2. 성공, 실패 어떤 경우라도 batch_summary 항상 존재해야 한다. 예외 없이.
+
+3. 위의 내용을 적용해서 Swagger 문서 업데이트, 테스트 코드 업데이트, index.html 업데이트

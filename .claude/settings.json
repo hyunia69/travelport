@@ -1,0 +1,39 @@
+{
+  "permissionPolicies": {
+    "Read": "allow",
+    "Grep": "allow",
+    "Glob": "allow",
+    "Bash": "allow",
+    "WebFetch": "allow",
+    "WebSearch": "allow"
+  },
+  "allowedTools": [
+    "python -m http.server*",
+    "python update_batch.py",
+    "python *.py",
+    "git status",
+    "git diff",
+    "git log*",
+    "git branch",
+    "npm run*",
+    "npm test",
+    "npm install",
+    "dir*",
+    "ls*",
+    "cat*",
+    "head*",
+    "tail*",
+    "find*",
+    "which*",
+    "where*",
+    "pytest*",
+    "node*",
+    "npm*"
+  ],
+  "autoAcceptEdits": false,
+  "comments": {
+    "safety": "autoAcceptEdits is false for safety - file modifications still require approval",
+    "automation": "Read/Grep/Glob/Bash/WebFetch/WebSearch are auto-approved for analysis tasks",
+    "allowedTools": "Safe read-only and test commands with wildcards for flexibility"
+  }
+}

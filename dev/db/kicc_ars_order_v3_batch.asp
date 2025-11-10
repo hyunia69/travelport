@@ -170,7 +170,7 @@
   Dim jsonBody, parsedOrders
   Dim strMode, terminal_id, req_type, alert_show, verify_num
   Dim cc_name, phone_no, cc_email
-  Dim card_no, expire_date, install_month, sms_message
+  Dim card_no, expire_date, install_month, sms_message, mms_subject
   Dim orderNoArray, amountArray, productDescArray, orderCount
 
   Dim strConnect, strConnectSMS
@@ -206,6 +206,7 @@
   expire_date = ExtractJsonString(jsonBody, "expire_date")
   install_month = ExtractJsonString(jsonBody, "install_month")
   sms_message = ExtractJsonString(jsonBody, "sms_message")
+  mms_subject = ExtractJsonString(jsonBody, "mms_subject")
 
   '// 배치 데이터 처리 (orders 배열)
   parsedOrders = ParseJsonOrders(jsonBody)
@@ -437,6 +438,7 @@
   Dim i, currentOrderNo, currentAmount, currentProductDesc
   Dim maxcode, callback_no, tempCode, j, qry, mx_cnt
   Dim orderResult, smsMsg, smsRs, adoRs, arsRs
+  Dim msgLength, useMMS
 
   For i = 0 To orderCount - 1
     currentOrderNo = Trim(orderNoArray(i))
@@ -516,7 +518,7 @@
           arsRs.close
           Set arsRs = nothing
 
-          '// SMS 메시지 큐 등록
+          '// SMS/MMS 메시지 생성
           If sms_message <> "" Then
             '// 사용자 정의 메시지가 있으면 앞에 추가
             smsMsg = sms_message & " " & cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
@@ -525,21 +527,82 @@
             smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
           End If
           smsMsg = smsMsg & callback_no & " 로전화주십시오"
+
+          '// 메시지 길이 체크: 80자 이상이면 MMS, 미만이면 SMS
+          msgLength = Len(smsMsg)
+          useMMS = 0
+          If msgLength >= 80 Then
+            useMMS = 1
+          End If
+
           Set smsRs = Server.CreateObject("ADODB.Recordset")
-          with smsRs
-            .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-            .AddNew
-            .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
-            .Fields("rs_id")           = "KICC"
-            .Fields("date_client_req") = now()
-            .Fields("content")         = smsMsg
-            .Fields("callback")        = callback_no
-            .Fields("service_type")    = "0"
-            .Fields("broadcast_yn")    = "N"
-            .Fields("msg_status")      = "1"
-            .Fields("recipient_num")   = phone_no
-            .Update
-          End with
+
+          If useMMS = 1 Then
+            '// MMS 전송 (em_mmt_tran)
+            On Error Resume Next
+            with smsRs
+              .Open "em_mmt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+              .AddNew
+              .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
+              .Fields("priority")        = "S"
+              .Fields("msg_class")       = "1"
+              .Fields("date_client_req") = now()
+              If mms_subject <> "" Then
+                .Fields("subject")       = mms_subject
+              Else
+                .Fields("subject")       = "KICC 결제 안내"
+              End If
+              .Fields("content_type")    = "0"
+              .Fields("content")         = smsMsg
+              .Fields("callback")        = callback_no
+              .Fields("service_type")    = "0"
+              .Fields("broadcast_yn")    = "N"
+              .Fields("msg_status")      = "1"
+              .Fields("recipient_num")   = phone_no
+              .Fields("country_code")    = "82"
+              .Fields("charset")         = "UTF-8"
+              .Fields("crypto_yn")       = "Y"
+              .Fields("rs_id")           = "KICC"
+              .Update
+            End with
+            If Err.Number <> 0 Then
+              '// MMS 실패 시 SMS로 폴백
+              smsRs.Close
+              Set smsRs = Server.CreateObject("ADODB.Recordset")
+              with smsRs
+                .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+                .AddNew
+                .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
+                .Fields("rs_id")           = "KICC"
+                .Fields("date_client_req") = now()
+                .Fields("content")         = smsMsg
+                .Fields("callback")        = callback_no
+                .Fields("service_type")    = "0"
+                .Fields("broadcast_yn")    = "N"
+                .Fields("msg_status")      = "1"
+                .Fields("recipient_num")   = phone_no
+                .Update
+              End with
+            End If
+            Err.Clear
+          Else
+            '// SMS 전송 (em_smt_tran)
+            with smsRs
+              .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+              .AddNew
+              .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
+              .Fields("rs_id")           = "KICC"
+              .Fields("date_client_req") = now()
+              .Fields("content")         = smsMsg
+              .Fields("callback")        = callback_no
+              .Fields("service_type")    = "0"
+              .Fields("broadcast_yn")    = "N"
+              .Fields("msg_status")      = "1"
+              .Fields("recipient_num")   = phone_no
+              .Update
+            End with
+          End If
+
           smsRs.Close
           Set smsRs = nothing
         End if

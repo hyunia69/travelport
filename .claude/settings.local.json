@@ -4,7 +4,10 @@
       "Bash(if not exist \".claude\" mkdir \".claude\")",
       "Bash(dir:*)",
       "Bash(python convert_to_euckr.py:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(\"C:\\Work\\dasam\\code\\claude\\travelport\\kicc\\temp_original.asp\")",
+      "Bash(git checkout:*)",
+      "Bash(curl -X POST \"https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp\" -H \"Content-Type: application/json\" -d \"{\"\"mode\"\":\"\"ars_data_add\"\",\"\"terminal_id\"\":\"\"05532206\"\",\"\"request_type\"\":\"\"SMS\"\",\"\"cc_name\"\":\"\"홍길동님께서 주문하신 상품에 대한 결제 안내 메시지입니다\"\",\"\"phone_no\"\":\"\"01024020684\"\",\"\"card_no\"\":\"\"1234567890123456\"\",\"\"expire_date\"\":\"\"2512\"\",\"\"install_month\"\":\"\"00\"\",\"\"mms_subject\"\":\"\"주문 결제 안내\"\",\"\"orders\"\":[{\"\"order_no\"\":\"\"TEST_MMS_1762791400\"\",\"\"amount\"\":5000,\"\"cc_pord_desc\"\":\"\"프리미엄 테스트 상품\"\"}]}\")"
     ],
     "deny": [],
     "ask": []

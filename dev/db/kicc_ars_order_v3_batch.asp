@@ -415,6 +415,38 @@
   set rs = nothing
 
   '// ========================================
+  '// 배치 인증번호 생성 (모든 타입 공통)
+  '// ========================================
+  '// 위치: 주문 처리 루프 진입 전 (배치당 1회만 실행)
+  '// 모든 타입(ARS, SMS, KTK)에 대해 동일하게 인증번호 생성
+
+  Dim maxcode, tempCode, j, arsRs
+  maxcode = ""
+
+  '// 인증번호 생성 (배치당 1회)
+  set cmd = Server.CreateObject("ADODB.Command")
+  with cmd
+      .ActiveConnection = strConnect
+      .CommandType = adCmdStoredProc
+      .CommandTimeout = 60
+      .CommandText = "sp_getKiccAuthNo"
+      set arsRs = .Execute
+  end with
+  set cmd = nothing
+
+  If IsNull(arsRs(0)) then
+    maxcode = "000100"
+  Else
+    tempCode = ""
+    for j=1 to 6-len(arsRs(0))
+      tempCode = tempCode & "0"
+    next
+    maxcode = tempCode & arsRs(0)
+  End if
+  arsRs.close
+  Set arsRs = nothing
+
+  '// ========================================
   '// 데이터베이스 연결
   '// ========================================
 
@@ -436,9 +468,8 @@
   '// ========================================
 
   Dim i, currentOrderNo, currentAmount, currentProductDesc
-  Dim maxcode, callback_no, tempCode, j, qry, mx_cnt
-  Dim orderResult, smsMsg, smsRs, adoRs, arsRs
-  Dim msgLength, useMMS
+  Dim callback_no, qry, mx_cnt
+  Dim orderResult, adoRs
 
   For i = 0 To orderCount - 1
     currentOrderNo = Trim(orderNoArray(i))
@@ -485,129 +516,7 @@
       set rs = nothing
 
       If mx_cnt = 0 Then
-        '// SMS 인증번호 생성 (SMS 타입인 경우)
-        maxcode = ""
-
-        If req_type = "SMS" Or req_type = "KTK" Then
-          If ars_dnis <> "" Then
-            callback_no = "02-3490-" & ars_dnis
-          Else
-            callback_no = "02-3490-4411"
-          End if
-
-          '// 인증번호 가져오기
-          set cmd = Server.CreateObject("ADODB.Command")
-          with cmd
-              .ActiveConnection = strConnect
-              .CommandType = adCmdStoredProc
-              .CommandTimeout = 60
-              .CommandText = "sp_getKiccAuthNo"
-              set arsRs = .Execute
-          end with
-          set cmd = nothing
-
-          If IsNull(arsRs(0)) then
-            maxcode = "000100"
-          Else
-            tempCode = ""
-            for j=1 to 6-len(arsRs(0))
-              tempCode = tempCode & "0"
-            next
-            maxcode = tempCode & arsRs(0)
-          End if
-          arsRs.close
-          Set arsRs = nothing
-
-          '// SMS/MMS 메시지 생성
-          If sms_message <> "" Then
-            '// 사용자 정의 메시지가 있으면 앞에 추가
-            smsMsg = sms_message & " " & cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
-          Else
-            '// 기존 기본 형식
-            smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
-          End If
-          smsMsg = smsMsg & callback_no & " 로전화주십시오"
-
-          '// 메시지 길이 체크: 80자 이상이면 MMS, 미만이면 SMS
-          msgLength = Len(smsMsg)
-          useMMS = 0
-          If msgLength >= 80 Then
-            useMMS = 1
-          End If
-
-          Set smsRs = Server.CreateObject("ADODB.Recordset")
-
-          If useMMS = 1 Then
-            '// MMS 전송 (em_mmt_tran)
-            On Error Resume Next
-            with smsRs
-              .Open "em_mmt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-              .AddNew
-              .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
-              .Fields("priority")        = "S"
-              .Fields("msg_class")       = "1"
-              .Fields("date_client_req") = now()
-              If mms_subject <> "" Then
-                .Fields("subject")       = mms_subject
-              Else
-                .Fields("subject")       = "KICC 결제 안내"
-              End If
-              .Fields("content_type")    = "0"
-              .Fields("content")         = smsMsg
-              .Fields("callback")        = callback_no
-              .Fields("service_type")    = "0"
-              .Fields("broadcast_yn")    = "N"
-              .Fields("msg_status")      = "1"
-              .Fields("recipient_num")   = phone_no
-              .Fields("country_code")    = "82"
-              .Fields("charset")         = "UTF-8"
-              .Fields("crypto_yn")       = "Y"
-              .Fields("rs_id")           = "KICC"
-              .Update
-            End with
-            If Err.Number <> 0 Then
-              '// MMS 실패 시 SMS로 폴백
-              smsRs.Close
-              Set smsRs = Server.CreateObject("ADODB.Recordset")
-              with smsRs
-                .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-                .AddNew
-                .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
-                .Fields("rs_id")           = "KICC"
-                .Fields("date_client_req") = now()
-                .Fields("content")         = smsMsg
-                .Fields("callback")        = callback_no
-                .Fields("service_type")    = "0"
-                .Fields("broadcast_yn")    = "N"
-                .Fields("msg_status")      = "1"
-                .Fields("recipient_num")   = phone_no
-                .Update
-              End with
-            End If
-            Err.Clear
-          Else
-            '// SMS 전송 (em_smt_tran)
-            with smsRs
-              .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-              .AddNew
-              .Fields("mt_refkey")       = terminal_id & "@" &  currentOrderNo
-              .Fields("rs_id")           = "KICC"
-              .Fields("date_client_req") = now()
-              .Fields("content")         = smsMsg
-              .Fields("callback")        = callback_no
-              .Fields("service_type")    = "0"
-              .Fields("broadcast_yn")    = "N"
-              .Fields("msg_status")      = "1"
-              .Fields("recipient_num")   = phone_no
-              .Update
-            End with
-          End If
-
-          smsRs.Close
-          Set smsRs = nothing
-        End if
-
-        '// 주문 저장
+        '// 주문 저장 (maxcode는 배치 시작 시 생성된 값 사용)
         Set adoRs = Server.CreateObject("ADODB.Recordset")
         with adoRs
           .Open "KICC_SHOP_ORDER", strConnect, adOpenDynamic, adLockOptimistic
@@ -668,6 +577,113 @@
   '// 데이터베이스 연결 종료
   dbCon.close
   Set dbCon = nothing
+
+  '// ========================================
+  '// SMS/MMS 발송 (조건부 실행)
+  '// ========================================
+  '// 위치: 주문 루프 종료 후 (배치당 1회만 실행)
+  '// SMS/KTK 타입일 때만 발송
+
+  If req_type = "SMS" Or req_type = "KTK" Then
+    '// 콜백번호 설정
+    If ars_dnis <> "" Then
+      callback_no = "02-3490-" & ars_dnis
+    Else
+      callback_no = "02-3490-4411"
+    End if
+
+    '// SMS/MMS 메시지 생성
+    Dim smsMsg, msgLength, useMMS, smsRs
+
+    If sms_message <> "" Then
+      '// 사용자 정의 메시지가 있으면 앞에 추가
+      '// smsMsg = sms_message & " " & cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
+      smsMsg = sms_message & ". " 
+    Else
+      '// 기존 기본 형식
+      smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
+    End If
+    smsMsg = smsMsg & callback_no & " 로전화주십시오"
+
+    '// 메시지 길이 체크: 80자 이상이면 MMS, 미만이면 SMS
+    msgLength = Len(smsMsg)
+    useMMS = 0
+    If msgLength >= 80 Then
+      useMMS = 1
+    End If
+
+    '// SMS/MMS 발송 (배치당 1회만)
+    Set smsRs = Server.CreateObject("ADODB.Recordset")
+
+    If useMMS = 1 Then
+      '// MMS 전송 (em_mmt_tran)
+      On Error Resume Next
+      with smsRs
+        .Open "em_mmt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+        .AddNew
+        .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
+        .Fields("priority")        = "S"
+        .Fields("msg_class")       = "1"
+        .Fields("date_client_req") = now()
+        If mms_subject <> "" Then
+          .Fields("subject")       = mms_subject
+        Else
+          .Fields("subject")       = "KICC 결제 안내"
+        End If
+        .Fields("content_type")    = "0"
+        .Fields("content")         = smsMsg
+        .Fields("callback")        = callback_no
+        .Fields("service_type")    = "0"
+        .Fields("broadcast_yn")    = "N"
+        .Fields("msg_status")      = "1"
+        .Fields("recipient_num")   = phone_no
+        .Fields("country_code")    = "82"
+        .Fields("charset")         = "UTF-8"
+        .Fields("crypto_yn")       = "Y"
+        .Fields("rs_id")           = "KICC"
+        .Update
+      End with
+      If Err.Number <> 0 Then
+        '// MMS 실패 시 SMS로 폴백
+        smsRs.Close
+        Set smsRs = Server.CreateObject("ADODB.Recordset")
+        with smsRs
+          .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+          .AddNew
+          .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
+          .Fields("rs_id")           = "KICC"
+          .Fields("date_client_req") = now()
+          .Fields("content")         = smsMsg
+          .Fields("callback")        = callback_no
+          .Fields("service_type")    = "0"
+          .Fields("broadcast_yn")    = "N"
+          .Fields("msg_status")      = "1"
+          .Fields("recipient_num")   = phone_no
+          .Update
+        End with
+      End If
+      Err.Clear
+    Else
+      '// SMS 전송 (em_smt_tran)
+      with smsRs
+        .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+        .AddNew
+        .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
+        .Fields("rs_id")           = "KICC"
+        .Fields("date_client_req") = now()
+        .Fields("content")         = smsMsg
+        .Fields("callback")        = callback_no
+        .Fields("service_type")    = "0"
+        .Fields("broadcast_yn")    = "N"
+        .Fields("msg_status")      = "1"
+        .Fields("recipient_num")   = phone_no
+        .Update
+      End with
+    End If
+
+    smsRs.Close
+    Set smsRs = nothing
+  End If
 
   '// ========================================
   '// 결과 반환 (JSON)

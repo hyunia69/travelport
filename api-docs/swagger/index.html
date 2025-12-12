@@ -265,7 +265,7 @@
                         <td style="padding: 10px; border: 1px solid #ddd;">terminal_id</td>
                         <td style="padding: 10px; border: 1px solid #ddd;">string</td>
                         <td style="padding: 10px; border: 1px solid #ddd;">가맹점 터미널 ID (KICC 발급)</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><code>05532206</code></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>T0021720</code></td>
                     </tr>
                     <tr>
                         <td style="padding: 10px; border: 1px solid #ddd;">request_type</td>
@@ -289,7 +289,7 @@
                         <td style="padding: 10px; border: 1px solid #ddd;">card_no</td>
                         <td style="padding: 10px; border: 1px solid #ddd;">string</td>
                         <td style="padding: 10px; border: 1px solid #ddd;">카드번호 (16자리)</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><code>1234567890123456</code></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><code>123456789012</code></td>
                     </tr>
                     <tr>
                         <td style="padding: 10px; border: 1px solid #ddd;">expire_date</td>
@@ -493,11 +493,11 @@
             <div class="batch-example">
 {
   "mode": "ars_data_add",
-  "terminal_id": "05532206",
+  "terminal_id": "T0021720",
   "request_type": "ARS",
   "cc_name": "홍길동",
-  "phone_no": "01012345678",
-  "card_no": "1234567890123456",
+  "phone_no": "01024020683",
+  "card_no": "123456789012",
   "expire_date": "2512",
   "install_month": "00",
   <strong style="color:#4caf50;">"orders": [
@@ -517,11 +517,11 @@
             <div class="batch-example">
 {
   "mode": "ars_data_add",
-  "terminal_id": "05532206",
+  "terminal_id": "T0021720",
   "request_type": "SMS",
   "cc_name": "김철수",
-  "phone_no": "01087654321",
-  "card_no": "1234567890123456",
+  "phone_no": "01024020684",
+  "card_no": "123456789012",
   "expire_date": "2512",
   "install_month": "00",
   <strong style="color:#ff9800;">"sms_message": "고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다",</strong>
@@ -564,11 +564,11 @@ fetch('https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp', {
   },
   body: JSON.stringify({
     mode: 'ars_data_add',
-    terminal_id: '05532206',
+    terminal_id: 'T0021720',
     request_type: 'SMS',
     cc_name: '홍길동',
-    phone_no: '01012345678',
-    card_no: '1234567890123456',
+    phone_no: '01024020684',
+    card_no: '123456789012',
     expire_date: '2512',
     install_month: '00',
     sms_message: '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
@@ -598,11 +598,11 @@ url = 'https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp'
 headers = {<strong style="color:#4caf50;">'Content-Type': 'application/json'</strong>}
 payload = {
     'mode': 'ars_data_add',
-    'terminal_id': '05532206',
+    'terminal_id': 'T0021720',
     'request_type': 'SMS',
     'cc_name': '홍길동',
-    'phone_no': '01012345678',
-    'card_no': '1234567890123456',
+    'phone_no': '01024020684',
+    'card_no': '123456789012',
     'expire_date': '2512',
     'install_month': '00',
     'sms_message': '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
@@ -625,11 +625,11 @@ print(f"총 {data['batch_summary']['total']}건 / 성공 {data['batch_summary'][
 $url = 'https://www.arspg.co.kr/ars/kicc/dev/db/kicc_ars_order_v3_batch.asp';
 $data = [
     'mode' => 'ars_data_add',
-    'terminal_id' => '05532206',
+    'terminal_id' => 'T0021720',
     'request_type' => 'SMS',
     'cc_name' => '홍길동',
-    'phone_no' => '01012345678',
-    'card_no' => '1234567890123456',
+    'phone_no' => '01024020684',
+    'card_no' => '123456789012',
     'expire_date' => '2512',
     'install_month' => '00',
     'sms_message' => '고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다',
@@ -685,11 +685,11 @@ echo "총 {$result['batch_summary']['total']}건 / 성공 {$result['batch_summar
 <span class="comment"># SMS 배치 주문 요청 예시 (사용자 정의 메시지 포함)</span>
 {
   "mode": "ars_data_add",
-  "terminal_id": "05532206",
+  "terminal_id": "T0021720",
   "request_type": "SMS",
   "cc_name": "홍길동",
-  "phone_no": "01012345678",
-  "card_no": "1234567890123456",
+  "phone_no": "01024020684",
+  "card_no": "123456789012",
   "expire_date": "2512",
   "install_month": "00",
   <strong style="color:#ff9800;">"sms_message": "고객님, 총 결제금액은 120,000원 입니다",</strong>
@@ -704,9 +704,9 @@ echo "총 {$result['batch_summary']['total']}건 / 성공 {$result['batch_summar
 <strong style="color:#4caf50;">{
   "batch_summary": {"total": 3, "success": 3, "fail": 0},
   "req_result": [
-    {"order_no": "ORDER001", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"},
-    {"order_no": "ORDER002", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"},
-    {"order_no": "ORDER003", "phone_no": "01012345678", "result_code": "0000", "message": "등록성공"}
+    {"order_no": "ORDER001", "phone_no": "01024020684", "result_code": "0000", "message": "등록성공"},
+    {"order_no": "ORDER002", "phone_no": "01024020684", "result_code": "0000", "message": "등록성공"},
+    {"order_no": "ORDER003", "phone_no": "01024020684", "result_code": "0000", "message": "등록성공"}
   ]
 }</strong>
 

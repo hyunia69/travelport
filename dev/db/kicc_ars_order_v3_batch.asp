@@ -26,10 +26,22 @@
   Response.CodePage = 65001
   Response.ContentType = "application/json"
 
-  '// CORS 헤더는 web.config에서 처리 (중복 방지)
-  '// OPTIONS 메서드 처리는 web.config와 IIS에서 자동 처리
+  '// OPTIONS 요청 처리 (CORS preflight)
+  If UCase(Request.ServerVariables("REQUEST_METHOD")) = "OPTIONS" Then
+    Response.Status = "200 OK"
+    Response.End
+  End If
+
+  '// 에러 핸들링 활성화
+  On Error Resume Next
+
+  '// ADO 상수 직접 정의 (METADATA 대신)
+  Const adCmdStoredProc = 4
+  Const adVarChar = 200
+  Const adParamInput = 1
+  Const adOpenDynamic = 2
+  Const adLockOptimistic = 3
 %>
-<!--METADATA TYPE="typelib" FILE="C:\program Files\Common Files\System\ado\msado15.dll"-->
 <%
   '// ========================================
   '// 유틸리티 함수

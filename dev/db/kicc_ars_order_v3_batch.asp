@@ -466,125 +466,195 @@
   Set dbCon = Server.CreateObject("ADODB.Connection")
   dbCon.Open strConnect
 
+  '// ========================================
+  '// All-or-Nothing 트랜잭션 처리
+  '// ========================================
+  '// Phase 1: 사전 검증 (INSERT 없음)
+  '// Phase 2: 전체 성공 시에만 일괄 INSERT
+  '// ========================================
+
   '// 배치 처리 결과 저장
   Dim resultArray()
   ReDim resultArray(orderCount - 1)
-  Dim resultIndex
-  resultIndex = 0
   Dim successCount, failCount
   successCount = 0
   failCount = 0
 
-  '// ========================================
-  '// 각 주문건 처리 루프
-  '// ========================================
+  '// 검증 결과 임시 저장 배열
+  '// validationResults(i, 0) = order_no
+  '// validationResults(i, 1) = result_code ("0000" = 통과, 기타 = 실패)
+  '// validationResults(i, 2) = message
+  '// validationResults(i, 3) = amount
+  '// validationResults(i, 4) = cc_pord_desc
+  Dim validationResults()
+  ReDim validationResults(orderCount - 1, 4)
+  Dim validationFailCount
+  validationFailCount = 0
 
   Dim i, currentOrderNo, currentAmount, currentProductDesc
   Dim callback_no, qry, mx_cnt
   Dim orderResult, adoRs
+
+  '// ========================================
+  '// Phase 1: 사전 검증 (INSERT 없음)
+  '// ========================================
 
   For i = 0 To orderCount - 1
     currentOrderNo = Trim(orderNoArray(i))
     currentAmount = Trim(amountArray(i))
     currentProductDesc = Trim(productDescArray(i))
 
-    '// 개별 주문번호 검증
+    '// 검증 결과 저장
+    validationResults(i, 0) = currentOrderNo
+    validationResults(i, 3) = currentAmount
+    validationResults(i, 4) = currentProductDesc
+
+    '// 필수 필드 검증
     If currentOrderNo = "" Then
-      orderResult = "{" & _
-                    """order_no"":""""," & _
-                    """phone_no"":""" & JsonEncode(phone_no) & """," & _
-                    """result_code"":""0002""," & _
-                    """message"":""주문번호누락""" & _
-                    "}"
-      resultArray(resultIndex) = orderResult
-      resultIndex = resultIndex + 1
+      validationResults(i, 1) = "0002"
+      validationResults(i, 2) = "주문번호누락"
+      validationFailCount = validationFailCount + 1
       failCount = failCount + 1
     ElseIf currentAmount = "" Then
-      orderResult = "{" & _
-                    """order_no"":""" & JsonEncode(currentOrderNo) & """," & _
-                    """phone_no"":""" & JsonEncode(phone_no) & """," & _
-                    """result_code"":""0008""," & _
-                    """message"":""결제금액누락""" & _
-                    "}"
-      resultArray(resultIndex) = orderResult
-      resultIndex = resultIndex + 1
+      validationResults(i, 1) = "0008"
+      validationResults(i, 2) = "결제금액누락"
+      validationFailCount = validationFailCount + 1
       failCount = failCount + 1
     ElseIf currentProductDesc = "" Then
-      orderResult = "{" & _
-                    """order_no"":""" & JsonEncode(currentOrderNo) & """," & _
-                    """phone_no"":""" & JsonEncode(phone_no) & """," & _
-                    """result_code"":""0007""," & _
-                    """message"":""상품명누락""" & _
-                    "}"
-      resultArray(resultIndex) = orderResult
-      resultIndex = resultIndex + 1
+      validationResults(i, 1) = "0007"
+      validationResults(i, 2) = "상품명누락"
+      validationFailCount = validationFailCount + 1
       failCount = failCount + 1
     Else
-      '// 주문번호 중복 확인
+      '// 중복 체크
       qry = "SELECT count(order_no) cnt FROM KICC_SHOP_ORDER where terminal_id = '"& terminal_id &"' and order_no = '"& currentOrderNo &"'"
       Set rs = dbCon.Execute(qry)
       mx_cnt = rs("cnt")
       rs.close
       set rs = nothing
 
-      If mx_cnt = 0 Then
-        '// 주문 저장 (maxcode는 배치 시작 시 생성된 값 사용)
-        Set adoRs = Server.CreateObject("ADODB.Recordset")
-        with adoRs
-          .Open "KICC_SHOP_ORDER", strConnect, adOpenDynamic, adLockOptimistic
-          .AddNew
-          .Fields("order_no")      = currentOrderNo
-          .Fields("terminal_nm")  = terminal_nm
-          .Fields("terminal_id")  = terminal_id
-          .Fields("terminal_pw")  = terminal_pw
-          .Fields("admin_id")     = admin_id
-          .Fields("admin_name")   = admin_name
-          .Fields("cust_nm")      = cc_name
-          .Fields("good_nm")      = currentProductDesc
-          .Fields("cust_email")   = cc_email
-          .Fields("amount")       = currentAmount
-          .Fields("phone_no")     = phone_no
-          .Fields("payment_code") = "0"
-          .Fields("request_type") = req_type
-        If card_no <> "" Then
-          .Fields("RESERVED_4")   = card_no
-        End if
-        If expire_date <> "" Then
-          .Fields("RESERVED_3")   = expire_date
-        End if
-        If install_month <> "" Then
-          .Fields("RESERVED_5")   = install_month
-        End if
-        If maxcode <> "" Then
-          .Fields("auth_no")  = maxcode
-        End if
-          .Update
-        End with
-        adoRs.Close
-        Set adoRs = nothing
-
-        orderResult = "{" & _
-                      """order_no"":""" & JsonEncode(currentOrderNo) & """," & _
-                      """phone_no"":""" & JsonEncode(phone_no) & """," & _
-                      """result_code"":""0000""," & _
-                      """message"":""등록성공""" & _
-                      "}"
-        resultArray(resultIndex) = orderResult
-        resultIndex = resultIndex + 1
-        successCount = successCount + 1
-      Else
-        orderResult = "{" & _
-                      """order_no"":""" & JsonEncode(currentOrderNo) & """," & _
-                      """phone_no"":""" & JsonEncode(phone_no) & """," & _
-                      """result_code"":""0011""," & _
-                      """message"":""거래번호중복""" & _
-                      "}"
-        resultArray(resultIndex) = orderResult
-        resultIndex = resultIndex + 1
+      If mx_cnt > 0 Then
+        validationResults(i, 1) = "0011"
+        validationResults(i, 2) = "거래번호중복"
+        validationFailCount = validationFailCount + 1
         failCount = failCount + 1
+      Else
+        validationResults(i, 1) = "0000"
+        validationResults(i, 2) = "등록성공"
+        successCount = successCount + 1
       End If
     End If
+
+    '// 응답 배열 생성 (기존 형식 그대로)
+    orderResult = "{" & _
+      """order_no"":""" & JsonEncode(validationResults(i, 0)) & """," & _
+      """phone_no"":""" & JsonEncode(phone_no) & """," & _
+      """result_code"":""" & validationResults(i, 1) & """," & _
+      """message"":""" & JsonEncode(validationResults(i, 2)) & """" & _
+      "}"
+    resultArray(i) = orderResult
   Next
+
+  '// ========================================
+  '// 검증 결과에 따른 분기
+  '// ========================================
+
+  If validationFailCount > 0 Then
+    '// 1건이라도 실패 → DB 등록 없이 응답만 반환
+    '// (응답은 기존과 동일한 형식)
+
+    dbCon.close
+    Set dbCon = nothing
+
+    '// SMS 발송 안 함 (전체 성공이 아니므로)
+
+    '// 응답 반환
+    Dim earlyJsonResponse
+    earlyJsonResponse = "{" & _
+      """batch_summary"":{" & _
+      """total"":" & orderCount & "," & _
+      """success"":" & successCount & "," & _
+      """fail"":" & failCount & _
+      "}," & _
+      """req_result"":" & BuildJsonArray(resultArray) & _
+      "}"
+
+    response.write earlyJsonResponse
+    response.end
+  End If
+
+  '// ========================================
+  '// Phase 2: 일괄 등록 (트랜잭션 사용)
+  '// ========================================
+  '// 이 시점에서는 모든 검증이 통과된 상태
+
+  '// 트랜잭션 시작
+  dbCon.BeginTrans
+  On Error Resume Next
+
+  Dim insertError
+  insertError = False
+
+  For i = 0 To orderCount - 1
+    currentOrderNo = validationResults(i, 0)
+    currentAmount = validationResults(i, 3)
+    currentProductDesc = validationResults(i, 4)
+
+    Set adoRs = Server.CreateObject("ADODB.Recordset")
+    with adoRs
+      .Open "KICC_SHOP_ORDER", dbCon, adOpenDynamic, adLockOptimistic
+      .AddNew
+      .Fields("order_no")      = currentOrderNo
+      .Fields("terminal_nm")   = terminal_nm
+      .Fields("terminal_id")   = terminal_id
+      .Fields("terminal_pw")   = terminal_pw
+      .Fields("admin_id")      = admin_id
+      .Fields("admin_name")    = admin_name
+      .Fields("cust_nm")       = cc_name
+      .Fields("good_nm")       = currentProductDesc
+      .Fields("cust_email")    = cc_email
+      .Fields("amount")        = currentAmount
+      .Fields("phone_no")      = phone_no
+      .Fields("payment_code")  = "0"
+      .Fields("request_type")  = req_type
+      If card_no <> "" Then .Fields("RESERVED_4") = card_no
+      If expire_date <> "" Then .Fields("RESERVED_3") = expire_date
+      If install_month <> "" Then .Fields("RESERVED_5") = install_month
+      If maxcode <> "" Then .Fields("auth_no") = maxcode
+      .Update
+    End With
+
+    If Err.Number <> 0 Then
+      insertError = True
+      Err.Clear
+      Exit For
+    End If
+
+    adoRs.Close
+    Set adoRs = Nothing
+  Next
+
+  '// 트랜잭션 완료 처리
+  If insertError Then
+    '// 롤백 - INSERT 중 오류 발생
+    dbCon.RollbackTrans
+
+    '// 전체 실패로 변경 (응답 재생성)
+    For i = 0 To orderCount - 1
+      orderResult = "{" & _
+        """order_no"":""" & JsonEncode(validationResults(i, 0)) & """," & _
+        """phone_no"":""" & JsonEncode(phone_no) & """," & _
+        """result_code"":""0017""," & _
+        """message"":""트랜잭션오류""" & _
+        "}"
+      resultArray(i) = orderResult
+    Next
+    successCount = 0
+    failCount = orderCount
+  Else
+    '// 커밋 - 전체 성공
+    dbCon.CommitTrans
+  End If
 
   '// 데이터베이스 연결 종료
   dbCon.close
@@ -594,9 +664,9 @@
   '// SMS/MMS 발송 (조건부 실행)
   '// ========================================
   '// 위치: 주문 루프 종료 후 (배치당 1회만 실행)
-  '// SMS/KTK 타입일 때만 발송
+  '// SMS/KTK 타입 + 전체 성공 시에만 발송 (All-or-Nothing 정책)
 
-  If req_type = "SMS" Or req_type = "KTK" Then
+  If (req_type = "SMS" Or req_type = "KTK") And failCount = 0 Then
     '// 콜백번호 설정
     If ars_dnis <> "" Then
       callback_no = "02-3490-" & ars_dnis

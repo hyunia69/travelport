@@ -41,6 +41,23 @@
   Const adParamInput = 1
   Const adOpenDynamic = 2
   Const adLockOptimistic = 3
+
+  '// ========================================
+  '// SMS 발송 서비스 제공자 설정
+  '// ========================================
+  '// INFOBANK: 기존 DB INSERT 방식 (em_smt_tran/em_mmt_tran 테이블)
+  '// TAS: 휴머스온 REST API 방식 (https://api.tason.com)
+  '//Const SMS_PROVIDER = "TAS"
+  Const SMS_PROVIDER = "INFOBANK"
+
+  '// TAS API 설정 (SMS_PROVIDER = "TAS" 일 때 사용)
+  Const TAS_API_URL = "https://api.tason.com/tas-api/send"
+  Const TAS_KAKAO_API_URL = "https://api.tason.com/tas-api/kakaosend"
+  Const TAS_ID = "hyunia@arspg.com"
+  Const TAS_AUTH_KEY = "1IR274-VYTLDX-HUM3IS-SDMCBZ_1118"
+  Const TAS_DEFAULT_SENDER = "01024020684"
+  Const TAS_DEFAULT_SENDER_NAME = "안현"
+  Const TAS_KAKAO_TEMPLATE_CODE = "KICC_0001"  '// 카카오 알림톡 템플릿 코드
 %>
 <%
   '// ========================================
@@ -173,6 +190,104 @@
     Next
     jsonArray = jsonArray & "]"
     BuildJsonArray = jsonArray
+  End Function
+
+  '// ========================================
+  '// TAS API 관련 함수
+  '// ========================================
+
+  '// 전화번호를 TAS 국제 형식으로 변환 (010xxx → 8210xxx)
+  Function FormatPhoneForTAS(phoneNo)
+    Dim result
+    result = Replace(phoneNo, "-", "")
+    result = Replace(result, " ", "")
+    If Left(result, 1) = "0" Then
+      result = "82" & Mid(result, 2)
+    End If
+    FormatPhoneForTAS = result
+  End Function
+
+  '// TAS API를 통한 SMS/LMS 발송
+  '// 반환값: TAS API 응답 JSON 문자열
+  Function SendSMSViaTAS(recipientName, recipientPhone, content, sender, senderName, subject)
+    Dim http, requestBody, response, sendType
+
+    On Error Resume Next
+
+    '// 90바이트 기준으로 SMS/LMS 구분 (TAS 기준)
+    If LenB(content) <= 90 Then
+      sendType = "SM"  '// SMS
+    Else
+      sendType = "LM"  '// LMS
+    End If
+
+    '// JSON 요청 본문 생성
+    requestBody = "{" & _
+      """tas_id"":""" & TAS_ID & """," & _
+      """send_type"":""" & sendType & """," & _
+      """auth_key"":""" & TAS_AUTH_KEY & """," & _
+      """data"":[{" & _
+        """user_name"":""" & JsonEncode(recipientName) & """," & _
+        """user_email"":""" & FormatPhoneForTAS(recipientPhone) & """," & _
+        """map_content"":""" & JsonEncode(content) & """," & _
+        """sender"":""" & Replace(sender, "-", "") & """," & _
+        """sender_name"":""" & JsonEncode(senderName) & """," & _
+        """subject"":""" & JsonEncode(subject) & """" & _
+      "}]}"
+
+    '// HTTP POST 요청
+    Set http = Server.CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "POST", TAS_API_URL, False
+    http.setRequestHeader "Content-Type", "application/json; charset=UTF-8"
+    http.Send requestBody
+
+    response = http.responseText
+    SendSMSViaTAS = response
+
+    Set http = Nothing
+
+    If Err.Number <> 0 Then
+      SendSMSViaTAS = "{""ERROR_CODE"":""99"",""ERROR_MSG"":""HTTP 요청 실패: " & Err.Description & """}"
+      Err.Clear
+    End If
+  End Function
+
+  '// TAS API를 통한 카카오 알림톡 발송
+  '// 반환값: TAS API 응답 JSON 문자열
+  Function SendKakaoViaTAS(recipientName, recipientPhone, content, sender, senderName, templateCode)
+    Dim http, requestBody, response
+
+    On Error Resume Next
+
+    '// JSON 요청 본문 생성
+    requestBody = "{" & _
+      """tas_id"":""" & TAS_ID & """," & _
+      """send_type"":""KA""," & _
+      """auth_key"":""" & TAS_AUTH_KEY & """," & _
+      """data"":[{" & _
+        """user_name"":""" & JsonEncode(recipientName) & """," & _
+        """user_email"":""" & FormatPhoneForTAS(recipientPhone) & """," & _
+        """map_content"":""" & JsonEncode(content) & """," & _
+        """sender"":""" & Replace(sender, "-", "") & """," & _
+        """sender_name"":""" & JsonEncode(senderName) & """," & _
+        """template_code"":""" & templateCode & """" & _
+      "}]}"
+
+    '// HTTP POST 요청
+    Set http = Server.CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "POST", TAS_KAKAO_API_URL, False
+    http.setRequestHeader "Content-Type", "application/json; charset=UTF-8"
+    http.Send requestBody
+
+    response = http.responseText
+    SendKakaoViaTAS = response
+
+    Set http = Nothing
+
+    If Err.Number <> 0 Then
+      SendKakaoViaTAS = "{""ERROR_CODE"":""99"",""ERROR_MSG"":""HTTP 요청 실패: " & Err.Description & """}"
+      Err.Clear
+    End If
   End Function
 
   '// ========================================
@@ -661,7 +776,7 @@
   Set dbCon = nothing
 
   '// ========================================
-  '// SMS/MMS 발송 (조건부 실행)
+  '// SMS/MMS/알림톡 발송 (조건부 실행)
   '// ========================================
   '// 위치: 주문 루프 종료 후 (배치당 1회만 실행)
   '// SMS/KTK 타입 + 전체 성공 시에만 발송 (All-or-Nothing 정책)
@@ -675,60 +790,102 @@
     End if
 
     '// SMS/MMS 메시지 생성
-    Dim smsMsg, msgLength, useMMS, smsRs
+    Dim smsMsg, msgLength, useMMS, smsRs, tasResponse
 
     If sms_message <> "" Then
       '// 사용자 정의 메시지가 있으면 앞에 추가
-      '// smsMsg = sms_message & " " & cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
-      smsMsg = sms_message & ". " 
+      smsMsg = sms_message & ". "
     Else
       '// 기존 기본 형식
       smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
     End If
     smsMsg = smsMsg & callback_no & " 로전화주십시오"
 
-    '// 메시지 길이 체크: 80자 이상이면 MMS, 미만이면 SMS
-    msgLength = Len(smsMsg)
-    useMMS = 0
-    If msgLength >= 80 Then
-      useMMS = 1
-    End If
+    '// ========================================
+    '// SMS 발송 서비스 분기 (TAS / INFOBANK)
+    '// ========================================
 
-    '// SMS/MMS 발송 (배치당 1회만)
-    Set smsRs = Server.CreateObject("ADODB.Recordset")
+    If SMS_PROVIDER = "TAS" Then
+      '// ========================================
+      '// TAS API 방식 (휴머스온 REST API)
+      '// ========================================
 
-    If useMMS = 1 Then
-      '// MMS 전송 (em_mmt_tran)
-      On Error Resume Next
-      with smsRs
-        .Open "em_mmt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-        .AddNew
-        .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
-        .Fields("priority")        = "S"
-        .Fields("msg_class")       = "1"
-        .Fields("date_client_req") = now()
-        If mms_subject <> "" Then
-          .Fields("subject")       = mms_subject
-        Else
-          .Fields("subject")       = "KICC 결제 안내"
+      If req_type = "KTK" Then
+        '// 카카오 알림톡 발송 (상수 TAS_KAKAO_TEMPLATE_CODE 사용)
+        tasResponse = SendKakaoViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, TAS_KAKAO_TEMPLATE_CODE)
+      Else
+        '// SMS/LMS 발송 (90바이트 기준 자동 구분)
+        tasResponse = SendSMSViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, mms_subject)
+      End If
+
+      '// TAS 응답 로깅 (디버깅용, 필요시 주석 해제)
+      '// Response.Write "<!-- TAS Response: " & tasResponse & " -->"
+
+    Else
+      '// ========================================
+      '// INFOBANK 방식 (기존 DB INSERT 방식)
+      '// ========================================
+
+      '// 메시지 길이 체크: 80자 이상이면 MMS, 미만이면 SMS
+      msgLength = Len(smsMsg)
+      useMMS = 0
+      If msgLength >= 80 Then
+        useMMS = 1
+      End If
+
+      '// SMS/MMS 발송 (배치당 1회만)
+      Set smsRs = Server.CreateObject("ADODB.Recordset")
+
+      If useMMS = 1 Then
+        '// MMS 전송 (em_mmt_tran)
+        On Error Resume Next
+        with smsRs
+          .Open "em_mmt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+          .AddNew
+          .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
+          .Fields("priority")        = "S"
+          .Fields("msg_class")       = "1"
+          .Fields("date_client_req") = now()
+          If mms_subject <> "" Then
+            .Fields("subject")       = mms_subject
+          Else
+            .Fields("subject")       = "KICC 결제 안내"
+          End If
+          .Fields("content_type")    = "0"
+          .Fields("content")         = smsMsg
+          .Fields("callback")        = callback_no
+          .Fields("service_type")    = "0"
+          .Fields("broadcast_yn")    = "N"
+          .Fields("msg_status")      = "1"
+          .Fields("recipient_num")   = phone_no
+          .Fields("country_code")    = "82"
+          .Fields("charset")         = "UTF-8"
+          .Fields("crypto_yn")       = "Y"
+          .Fields("rs_id")           = "KICC"
+          .Update
+        End with
+        If Err.Number <> 0 Then
+          '// MMS 실패 시 SMS로 폴백
+          smsRs.Close
+          Set smsRs = Server.CreateObject("ADODB.Recordset")
+          with smsRs
+            .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
+            .AddNew
+            .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
+            .Fields("rs_id")           = "KICC"
+            .Fields("date_client_req") = now()
+            .Fields("content")         = smsMsg
+            .Fields("callback")        = callback_no
+            .Fields("service_type")    = "0"
+            .Fields("broadcast_yn")    = "N"
+            .Fields("msg_status")      = "1"
+            .Fields("recipient_num")   = phone_no
+            .Update
+          End with
         End If
-        .Fields("content_type")    = "0"
-        .Fields("content")         = smsMsg
-        .Fields("callback")        = callback_no
-        .Fields("service_type")    = "0"
-        .Fields("broadcast_yn")    = "N"
-        .Fields("msg_status")      = "1"
-        .Fields("recipient_num")   = phone_no
-        .Fields("country_code")    = "82"
-        .Fields("charset")         = "UTF-8"
-        .Fields("crypto_yn")       = "Y"
-        .Fields("rs_id")           = "KICC"
-        .Update
-      End with
-      If Err.Number <> 0 Then
-        '// MMS 실패 시 SMS로 폴백
-        smsRs.Close
-        Set smsRs = Server.CreateObject("ADODB.Recordset")
+        Err.Clear
+      Else
+        '// SMS 전송 (em_smt_tran)
         with smsRs
           .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
           .AddNew
@@ -744,27 +901,11 @@
           .Update
         End with
       End If
-      Err.Clear
-    Else
-      '// SMS 전송 (em_smt_tran)
-      with smsRs
-        .Open "em_smt_tran", strConnectSMS, adOpenDynamic, adLockOptimistic
-        .AddNew
-        .Fields("mt_refkey")       = terminal_id & "@BATCH"  '// 배치 단위 식별
-        .Fields("rs_id")           = "KICC"
-        .Fields("date_client_req") = now()
-        .Fields("content")         = smsMsg
-        .Fields("callback")        = callback_no
-        .Fields("service_type")    = "0"
-        .Fields("broadcast_yn")    = "N"
-        .Fields("msg_status")      = "1"
-        .Fields("recipient_num")   = phone_no
-        .Update
-      End with
-    End If
 
-    smsRs.Close
-    Set smsRs = nothing
+      smsRs.Close
+      Set smsRs = nothing
+    End If  '// End SMS_PROVIDER 분기
+
   End If
 
   '// ========================================

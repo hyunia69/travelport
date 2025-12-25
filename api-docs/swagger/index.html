@@ -324,10 +324,23 @@
                             문자나 카카오톡으로 전달할 사용자 정의 메시지 (선택).
                             <br><small style="color: #666;">
                             request_type이 SMS 또는 KTK인 경우에만 사용됩니다.(최대 90자)
+                            <br>
+                            <strong>줄바꿈</strong>: JSON 요청에서는 <code>\n</code>(또는 <code>\r\n</code>)로 입력하세요.
+                            (예: <code>첫줄\n둘째줄</code> → 실제 전송 시 줄바꿈 처리)
                             </small>
                         </td>
                         <td style="padding: 10px; border: 1px solid #ddd;">
-                            <code>고객님, 트래블포트에서 결제하실 금액은 총 100,000원 입니다</code>
+                            <div style="display: grid; gap: 8px;">
+                                <div>
+                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">JSON 입력 예시</div>
+                                    <code>첫줄\n둘째줄</code>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">실제 전송 메시지(표시 예시)</div>
+                                    <pre style="margin: 0; background: #f5f5f5; padding: 6px 8px; border-radius: 4px; white-space: pre-wrap;"><code>첫줄
+둘째줄</code></pre>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     <tr>
@@ -544,6 +557,7 @@
                 <li><strong>orders 배열 필수</strong>: 각 주문 객체에 order_no, amount, cc_pord_desc 필드 포함 필요</li>
                 <li><strong>중첩 객체 미지원</strong>: Flat 구조만 가능 (예: <code>{"user": {"name": "홍길동"}}</code> 불가)</li>
                 <li><strong>특수문자 제한</strong>: 문자열 값에 <code>"</code>, <code>'</code>, <code>{</code>, <code>}</code> 포함 시 파싱 오류 가능</li>
+                <li><strong>줄바꿈 입력</strong>: 문자열에 줄바꿈이 필요하면 실제 Enter 대신 <code>\n</code>(또는 <code>\r\n</code>)로 입력 권장 (서버는 실제 개행/ <code>\n</code> 모두 처리)</li>
                 <li><strong>amount 타입</strong>: 숫자 또는 문자열 모두 허용 (내부적으로 문자열 처리)</li>
             </ul>
         </div>

@@ -182,6 +182,24 @@
     JsonEncode = result
   End Function
 
+  '// 입력 문자열에 포함된 JSON 이스케이프(\n, \r, \r\n, \t)를 실제 제어문자로 복원
+  '// 예) "첫줄\n둘째줄"  ->  "첫줄" & vbLf & "둘째줄"
+  '// 주의: 여기서는 줄바꿈/탭만 처리(역슬래시 자체(\\)는 건드리지 않음)
+  Function DecodeControlEscapes(str)
+    Dim result
+    If IsNull(str) Or str = "" Then
+      DecodeControlEscapes = ""
+      Exit Function
+    End If
+
+    result = CStr(str)
+    result = Replace(result, "\r\n", vbCrLf)
+    result = Replace(result, "\n", vbLf)
+    result = Replace(result, "\r", vbCr)
+    result = Replace(result, "\t", vbTab)
+    DecodeControlEscapes = result
+  End Function
+
   '// JSON 배열 생성 함수
   Function BuildJsonArray(items)
     Dim i, jsonArray
@@ -331,8 +349,9 @@
   card_no = ExtractJsonString(jsonBody, "card_no")
   expire_date = ExtractJsonString(jsonBody, "expire_date")
   install_month = ExtractJsonString(jsonBody, "install_month")
-  sms_message = ExtractJsonString(jsonBody, "sms_message")
-  mms_subject = ExtractJsonString(jsonBody, "mms_subject")
+  '// Swagger/클라이언트에서 "...\n..." 형태로 보낸 경우 실제 개행으로 복원
+  sms_message = DecodeControlEscapes(ExtractJsonString(jsonBody, "sms_message"))
+  mms_subject = DecodeControlEscapes(ExtractJsonString(jsonBody, "mms_subject"))
 
   '// 배치 데이터 처리 (orders 배열)
   parsedOrders = ParseJsonOrders(jsonBody)

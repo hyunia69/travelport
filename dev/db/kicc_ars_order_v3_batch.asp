@@ -47,16 +47,16 @@
   '// ========================================
   '// INFOBANK: 기존 DB INSERT 방식 (em_smt_tran/em_mmt_tran 테이블)
   '// TAS: 휴머스온 REST API 방식 (https://api.tason.com)
-  '//Const SMS_PROVIDER = "TAS"
-  Const SMS_PROVIDER = "INFOBANK"
+  Const SMS_PROVIDER = "TAS"
+  '//Const SMS_PROVIDER = "INFOBANK"
 
   '// TAS API 설정 (SMS_PROVIDER = "TAS" 일 때 사용)
   Const TAS_API_URL = "https://api.tason.com/tas-api/send"
   Const TAS_KAKAO_API_URL = "https://api.tason.com/tas-api/kakaosend"
-  Const TAS_ID = "hyunia@arspg.com"
+  Const TAS_ID = "hyunia69@arspg.com"
   Const TAS_AUTH_KEY = "1IR274-VYTLDX-HUM3IS-SDMCBZ_1118"
-  Const TAS_DEFAULT_SENDER = "01024020684"
-  Const TAS_DEFAULT_SENDER_NAME = "안현"
+  Const TAS_DEFAULT_SENDER = "0234906698"
+  Const TAS_DEFAULT_SENDER_NAME = "다삼솔루션"
   Const TAS_KAKAO_TEMPLATE_CODE = "KICC_0001"  '// 카카오 알림톡 템플릿 코드
 %>
 <%
@@ -174,6 +174,8 @@
       result = Replace(result, "\", "\\")
       result = Replace(result, """", "\""")
       result = Replace(result, vbCrLf, "\n")
+      '// LF(Chr(10))만 포함된 줄바꿈도 반드시 이스케이프 (TAS JSON 파싱 400 방지)
+      result = Replace(result, vbLf, "\n")
       result = Replace(result, vbCr, "\r")
       result = Replace(result, vbTab, "\t")
     End If
@@ -196,14 +198,11 @@
   '// TAS API 관련 함수
   '// ========================================
 
-  '// 전화번호를 TAS 국제 형식으로 변환 (010xxx → 8210xxx)
+  '// 전화번호 정규화 (하이픈, 공백 제거만 수행)
   Function FormatPhoneForTAS(phoneNo)
     Dim result
     result = Replace(phoneNo, "-", "")
     result = Replace(result, " ", "")
-    If Left(result, 1) = "0" Then
-      result = "82" & Mid(result, 2)
-    End If
     FormatPhoneForTAS = result
   End Function
 
@@ -781,6 +780,9 @@
   '// 위치: 주문 루프 종료 후 (배치당 1회만 실행)
   '// SMS/KTK 타입 + 전체 성공 시에만 발송 (All-or-Nothing 정책)
 
+  Dim tasDebugInfo  '// 디버깅용 TAS 응답 저장 (블록 밖에서 선언)
+  tasDebugInfo = ""
+
   If (req_type = "SMS" Or req_type = "KTK") And failCount = 0 Then
     '// 콜백번호 설정
     If ars_dnis <> "" Then
@@ -794,12 +796,12 @@
 
     If sms_message <> "" Then
       '// 사용자 정의 메시지가 있으면 앞에 추가
-      smsMsg = sms_message & ". "
+      smsMsg = sms_message
     Else
       '// 기존 기본 형식
       smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
     End If
-    smsMsg = smsMsg & callback_no & " 로전화주십시오"
+    '//smsMsg = smsMsg & callback_no & " 로전화주십시오"
 
     '// ========================================
     '// SMS 발송 서비스 분기 (TAS / INFOBANK)
@@ -818,8 +820,8 @@
         tasResponse = SendSMSViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, mms_subject)
       End If
 
-      '// TAS 응답 로깅 (디버깅용, 필요시 주석 해제)
-      '// Response.Write "<!-- TAS Response: " & tasResponse & " -->"
+      '// 디버깅용 TAS 응답 저장
+      tasDebugInfo = tasResponse
 
     Else
       '// ========================================
@@ -921,7 +923,8 @@
                    """success"":" & successCount & "," & _
                    """fail"":" & failCount & _
                    "}," & _
-                   """req_result"":" & BuildJsonArray(resultArray) & _
+                   """req_result"":" & BuildJsonArray(resultArray) & "," & _
+                   """tas_debug"":""" & JsonEncode(tasDebugInfo) & """" & _
                    "}"
 
     response.write jsonResponse

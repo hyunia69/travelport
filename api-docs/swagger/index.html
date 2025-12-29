@@ -917,6 +917,18 @@
                                 <td><code>결제 안내 메시지</code></td>
                             </tr>
                             <tr>
+                                <td><code>agency_name</code></td>
+                                <td>string</td>
+                                <td>여행사명 <strong style="color: var(--danger);">(SMS/KTK에서 sms_message 없을 시 필수)</strong></td>
+                                <td><code>테스트10 여행사</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>reservation_no</code></td>
+                                <td>string</td>
+                                <td>예약번호 <strong style="color: var(--danger);">(SMS/KTK에서 sms_message 없을 시 필수)</strong></td>
+                                <td><code>ABC1234</code></td>
+                            </tr>
+                            <tr>
                                 <td><code>alert_show</code></td>
                                 <td>string</td>
                                 <td>응답 표시 여부 (Y/N)</td>
@@ -924,6 +936,10 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="alert alert-warning">
+                    <span class="material-icons-outlined">warning</span>
+                    <span><strong>SMS/KTK 조건부 필수 파라미터:</strong> <code>sms_message</code>가 제공되지 않으면 <code>agency_name</code>과 <code>reservation_no</code>가 <strong>필수</strong>입니다. <code>sms_message</code>가 있으면 무시됩니다.</span>
                 </div>
 
                 <h3 class="sub-header">
@@ -1169,6 +1185,18 @@
                                 <td>할부개월수누락</td>
                                 <td>install_month</td>
                                 <td>00 또는 02~12 전달</td>
+                            </tr>
+                            <tr class="row-warning">
+                                <td><code>0016</code></td>
+                                <td>여행사명누락</td>
+                                <td>agency_name</td>
+                                <td>SMS/KTK에서 sms_message 없을 시 필수</td>
+                            </tr>
+                            <tr class="row-warning">
+                                <td><code>0018</code></td>
+                                <td>예약번호누락</td>
+                                <td>reservation_no</td>
+                                <td>SMS/KTK에서 sms_message 없을 시 필수</td>
                             </tr>
                         </tbody>
                     </table>

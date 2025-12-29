@@ -200,6 +200,22 @@
     DecodeControlEscapes = result
   End Function
 
+  '// 숫자를 천단위 콤마 포맷팅
+  Function FormatNumberWithComma(num)
+    Dim strNum, result, i, cnt
+    strNum = CStr(num)
+    result = ""
+    cnt = 0
+    For i = Len(strNum) To 1 Step -1
+      cnt = cnt + 1
+      result = Mid(strNum, i, 1) & result
+      If cnt Mod 3 = 0 And i > 1 Then
+        result = "," & result
+      End If
+    Next
+    FormatNumberWithComma = result
+  End Function
+
   '// JSON 배열 생성 함수
   Function BuildJsonArray(items)
     Dim i, jsonArray
@@ -352,6 +368,9 @@
   '// Swagger/클라이언트에서 "...\n..." 형태로 보낸 경우 실제 개행으로 복원
   sms_message = DecodeControlEscapes(ExtractJsonString(jsonBody, "sms_message"))
   mms_subject = DecodeControlEscapes(ExtractJsonString(jsonBody, "mms_subject"))
+  '// 여행사/항공 SMS 자동 생성용 파라미터
+  agency_name = ExtractJsonString(jsonBody, "agency_name")
+  reservation_no = ExtractJsonString(jsonBody, "reservation_no")
 
   '// 배치 데이터 처리 (orders 배열)
   parsedOrders = ParseJsonOrders(jsonBody)
@@ -492,6 +511,35 @@
     response.write errorJson
     response.end
   End if
+
+  '// SMS/KTK 타입일 때, sms_message가 없으면 agency_name, reservation_no 필수 검증
+  If (req_type = "SMS" Or req_type = "KTK") And sms_message = "" Then
+    If agency_name = "" Then
+      errorJson = "{" & _
+                  """batch_summary"":{""total"":" & orderCount & ",""success"":0,""fail"":" & orderCount & "}," & _
+                  """req_result"":[{" & _
+                  """order_no"":""" & JsonEncode(orderNoArray(0)) & """," & _
+                  """phone_no"":""" & JsonEncode(phone_no) & """," & _
+                  """result_code"":""0016""," & _
+                  """message"":""여행사명누락 (sms_message 미제공 시 필수)""" & _
+                  "}]}"
+      response.write errorJson
+      response.end
+    End If
+
+    If reservation_no = "" Then
+      errorJson = "{" & _
+                  """batch_summary"":{""total"":" & orderCount & ",""success"":0,""fail"":" & orderCount & "}," & _
+                  """req_result"":[{" & _
+                  """order_no"":""" & JsonEncode(orderNoArray(0)) & """," & _
+                  """phone_no"":""" & JsonEncode(phone_no) & """," & _
+                  """result_code"":""0018""," & _
+                  """message"":""예약번호누락 (sms_message 미제공 시 필수)""" & _
+                  "}]}"
+      response.write errorJson
+      response.end
+    End If
+  End If
 
   '// 배열 길이 검증
   If UBound(amountArray) + 1 <> orderCount Then
@@ -810,14 +858,34 @@
       callback_no = "02-3490-4411"
     End if
 
+    '// 배치 전체 금액 합계 계산
+    Dim totalAmount, k
+    totalAmount = 0
+    For k = 0 To orderCount - 1
+      If IsNumeric(amountArray(k)) Then
+        totalAmount = totalAmount + CLng(amountArray(k))
+      End If
+    Next
+
     '// SMS/MMS 메시지 생성
     Dim smsMsg, msgLength, useMMS, smsRs, tasResponse
 
     If sms_message <> "" Then
-      '// 사용자 정의 메시지가 있으면 앞에 추가
+      '// 사용자 정의 메시지
       smsMsg = sms_message
+    ElseIf agency_name <> "" And reservation_no <> "" Then
+      '// 여행사/항공 자동 메시지 생성 (항공사명: 대한항공 고정)
+      smsMsg = "안녕하세요 고객님" & vbLf & _
+               agency_name & " 입니다." & vbLf & _
+               "대한항공 ARS 결제 안내드립니다." & vbLf & _
+               "승객명:" & cc_name & vbLf & _
+               "결제금액:" & FormatNumberWithComma(totalAmount) & " 원" & vbLf & _
+               "예약번호:" & reservation_no & vbLf & _
+               "ARS 진행하기:02-3490-6698" & vbLf & _
+               "본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다" & vbLf & _
+               "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다"
     Else
-      '// 기존 기본 형식
+      '// 기존 기본 형식 (폴백)
       smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
     End If
     '//smsMsg = smsMsg & callback_no & " 로전화주십시오"

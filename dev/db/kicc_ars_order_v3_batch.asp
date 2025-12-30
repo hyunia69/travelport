@@ -57,7 +57,7 @@
   Const TAS_AUTH_KEY = "1IR274-VYTLDX-HUM3IS-SDMCBZ_1118"
   Const TAS_DEFAULT_SENDER = "0234906698"
   Const TAS_DEFAULT_SENDER_NAME = "다삼솔루션"
-  Const TAS_KAKAO_TEMPLATE_CODE = "KICC_0001"  '// 카카오 알림톡 템플릿 코드
+  Const TAS_KAKAO_TEMPLATE_CODE = "C_KK_013_02_73931"  '// 카카오 알림톡 템플릿 코드
 %>
 <%
   '// ========================================
@@ -305,6 +305,9 @@
         """sender_name"":""" & JsonEncode(senderName) & """," & _
         """template_code"":""" & templateCode & """" & _
       "}]}"
+
+    '// 디버깅용 요청 본문 저장 (전역 변수)
+    tasRequestBody = requestBody
 
     '// HTTP POST 요청
     Set http = Server.CreateObject("MSXML2.ServerXMLHTTP.6.0")
@@ -848,7 +851,11 @@
   '// SMS/KTK 타입 + 전체 성공 시에만 발송 (All-or-Nothing 정책)
 
   Dim tasDebugInfo  '// 디버깅용 TAS 응답 저장 (블록 밖에서 선언)
+  Dim kakaoMessage  '// 디버깅용 카카오 메시지 저장
+  Dim tasRequestBody  '// 디버깅용 TAS API 요청 본문 저장
   tasDebugInfo = ""
+  kakaoMessage = ""
+  tasRequestBody = ""
 
   If (req_type = "SMS" Or req_type = "KTK") And failCount = 0 Then
     '// 콜백번호 설정
@@ -875,15 +882,16 @@
       smsMsg = sms_message
     ElseIf agency_name <> "" And reservation_no <> "" Then
       '// 여행사/항공 자동 메시지 생성 (항공사명: 대한항공 고정)
-      smsMsg = "안녕하세요 고객님" & vbLf & _
-               agency_name & " 입니다." & vbLf & _
-               "대한항공 ARS 결제 안내드립니다." & vbLf & _
-               "승객명:" & cc_name & vbLf & _
-               "결제금액:" & FormatNumberWithComma(totalAmount) & " 원" & vbLf & _
-               "예약번호:" & reservation_no & vbLf & _
-               "ARS 진행하기:02-3490-6698" & vbLf & _
-               "본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다" & vbLf & _
-               "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다"
+      '// 카카오 알림톡 템플릿(C_KK_013_02_73931)과 정확히 일치해야 함
+      smsMsg = "안녕하세요 고객님," & vbLf & _
+               agency_name & "여행사 입니다. 대한항공 ARS 결제 안내드립니다." & vbLf & _
+               vbLf & _
+               "승객명 : " & cc_name & vbLf & _
+               "결제금액 : " & FormatNumberWithComma(totalAmount) & "원" & vbLf & _
+               "예약번호 : " & reservation_no & vbLf & _
+               "ARS 진행하기 : 02-3490-6698" & vbLf & _
+               "본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다." & vbLf & _
+               "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다."
     Else
       '// 기존 기본 형식 (폴백)
       smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
@@ -901,6 +909,7 @@
 
       If req_type = "KTK" Then
         '// 카카오 알림톡 발송 (상수 TAS_KAKAO_TEMPLATE_CODE 사용)
+        kakaoMessage = smsMsg  '// 디버깅용 메시지 저장
         tasResponse = SendKakaoViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, TAS_KAKAO_TEMPLATE_CODE)
       Else
         '// SMS/LMS 발송 (90바이트 기준 자동 구분)
@@ -1011,7 +1020,9 @@
                    """fail"":" & failCount & _
                    "}," & _
                    """req_result"":" & BuildJsonArray(resultArray) & "," & _
-                   """tas_debug"":""" & JsonEncode(tasDebugInfo) & """" & _
+                   """tas_debug"":""" & JsonEncode(tasDebugInfo) & """," & _
+                   """kakao_message"":""" & JsonEncode(kakaoMessage) & """," & _
+                   """tas_request"":""" & JsonEncode(tasRequestBody) & """" & _
                    "}"
 
     response.write jsonResponse

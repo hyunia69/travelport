@@ -307,7 +307,7 @@ paths:
                   terminal_id: "T0021720"
                   request_type: KTK
                   cc_name: 이영희
-                  phone_no: "01098765432"
+                  phone_no: "01024020684"
                   card_no: "123456789012"
                   expire_date: "2612"
                   install_month: "03"
@@ -324,6 +324,40 @@ paths:
                     - order_no: "KTK20250118003"
                       amount: 30000
                       cc_pord_desc: "렌터카"
+
+              ktk_auto_message:
+                summary: 카카오톡(KTK) 자동 메시지 생성 (여행사/항공 결제 안내)
+                description: |
+                  agency_name과 reservation_no를 제공하면 sms_message 없이도 자동으로 카카오톡 결제 안내 메시지가 생성됩니다.
+                  생성되는 메시지:
+                  "안녕하세요 고객님,
+                  트래블포트여행사 입니다. 대한항공 ARS 결제 안내드립니다.
+
+                  승객명 : CHOI/EUNMI MS
+                  결제금액 : 600,000원
+                  예약번호 : ABC1234
+                  ARS 진행하기 : 02-3490-6698
+                  본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다.
+                  ※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다."
+                value:
+                  mode: ars_data_add
+                  terminal_id: "T0021720"
+                  request_type: KTK
+                  cc_name: "CHOI/EUNMI MS"
+                  phone_no: "01024020684"
+                  card_no: "123456789012"
+                  expire_date: "2512"
+                  install_month: "00"
+                  agency_name: "트래블포트"
+                  reservation_no: "ABC1234"
+                  alert_show: Y
+                  orders:
+                    - order_no: "KTKAUT20250118001"
+                      amount: 300000
+                      cc_pord_desc: "항공권1"
+                    - order_no: "KTKAUT20250118002"
+                      amount: 300000
+                      cc_pord_desc: "항공권2"
 
               sms_auto_message:
                 summary: SMS 자동 메시지 생성 (여행사/항공 결제 안내)
@@ -344,7 +378,7 @@ paths:
                   terminal_id: "T0021720"
                   request_type: SMS
                   cc_name: "CHOI/EUNMI MS"
-                  phone_no: "01012345678"
+                  phone_no: "01024020684"
                   card_no: "123456789012"
                   expire_date: "2512"
                   install_month: "00"

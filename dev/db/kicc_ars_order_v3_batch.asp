@@ -887,15 +887,28 @@
     Next
 
     '// SMS/MMS 메시지 생성
-    Dim smsMsg, msgLength, useMMS, smsRs, tasResponse
+    Dim smsMsg, ktkMsg, msgLength, useMMS, smsRs, tasResponse
 
     If sms_message <> "" Then
       '// 사용자 정의 메시지
       smsMsg = sms_message
+      ktkMsg = sms_message
     ElseIf agency_name <> "" And reservation_no <> "" Then
       '// 여행사/항공 자동 메시지 생성 (항공사명: 대한항공 고정)
-      '// 카카오 알림톡 템플릿(C_KK_013_02_73931)과 정확히 일치해야 함
+      '// SMS용 메시지
       smsMsg = "안녕하세요 고객님," & vbLf & _
+               agency_name & "여행사 입니다." & vbLf & _
+               "대한항공 ARS 결제 안내드립니다." & vbLf & _
+               vbLf & _
+               "승객명 : " & cc_name & vbLf & _
+               "결제금액 : " & FormatNumberWithComma(totalAmount) & "원" & vbLf & _
+               "예약번호 : " & reservation_no & vbLf & _
+               "ARS 진행하기 : 02-3490-6698" & vbLf & _
+               vbLf & _
+               "※ 본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다." & vbLf & _
+               "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다."
+      '// KTK(카카오톡)용 메시지 - 카카오 알림톡 템플릿(C_KK_013_02_73931)과 일치해야 함
+      ktkMsg = "안녕하세요 고객님," & vbLf & _
                agency_name & "여행사 입니다. 대한항공 ARS 결제 안내드립니다." & vbLf & _
                vbLf & _
                "승객명 : " & cc_name & vbLf & _
@@ -907,6 +920,7 @@
     Else
       '// 기존 기본 형식 (폴백)
       smsMsg = cc_name & " 님의 주문인증번호는[" & maxcode & "]입니다 "
+      ktkMsg = smsMsg
     End If
     '//smsMsg = smsMsg & callback_no & " 로전화주십시오"
 
@@ -921,8 +935,8 @@
 
       If req_type = "KTK" Then
         '// 카카오 알림톡 발송 (상수 TAS_KAKAO_TEMPLATE_CODE 사용)
-        kakaoMessage = smsMsg  '// 디버깅용 메시지 저장
-        tasResponse = SendKakaoViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, TAS_KAKAO_TEMPLATE_CODE)
+        kakaoMessage = ktkMsg  '// 디버깅용 메시지 저장
+        tasResponse = SendKakaoViaTAS(cc_name, phone_no, ktkMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, TAS_KAKAO_TEMPLATE_CODE)
       Else
         '// SMS/LMS 발송 (90바이트 기준 자동 구분)
         tasResponse = SendSMSViaTAS(cc_name, phone_no, smsMsg, TAS_DEFAULT_SENDER, TAS_DEFAULT_SENDER_NAME, mms_subject)

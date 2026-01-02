@@ -240,6 +240,18 @@
     FormatPhoneForTAS = result
   End Function
 
+  '// 전화번호를 카카오톡 국제 형식으로 변환 (82 + 앞자리 0 제거)
+  Function FormatPhoneForKakao(phoneNo)
+    Dim result
+    result = Replace(phoneNo, "-", "")
+    result = Replace(result, " ", "")
+    '// 0으로 시작하면 82로 변환 (한국 국제전화 형식)
+    If Left(result, 1) = "0" Then
+      result = "82" & Mid(result, 2)
+    End If
+    FormatPhoneForKakao = result
+  End Function
+
   '// TAS API를 통한 SMS/LMS 발송
   '// 반환값: TAS API 응답 JSON 문자열
   Function SendSMSViaTAS(recipientName, recipientPhone, content, sender, senderName, subject)
@@ -299,7 +311,7 @@
       """auth_key"":""" & TAS_AUTH_KEY & """," & _
       """data"":[{" & _
         """user_name"":""" & JsonEncode(recipientName) & """," & _
-        """user_email"":""" & FormatPhoneForTAS(recipientPhone) & """," & _
+        """user_email"":""" & FormatPhoneForKakao(recipientPhone) & """," & _
         """map_content"":""" & JsonEncode(content) & """," & _
         """sender"":""" & Replace(sender, "-", "") & """," & _
         """sender_name"":""" & JsonEncode(senderName) & """," & _

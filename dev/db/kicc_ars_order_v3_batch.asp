@@ -57,7 +57,7 @@
   Const TAS_AUTH_KEY = "1IR274-VYTLDX-HUM3IS-SDMCBZ_1118"
   Const TAS_DEFAULT_SENDER = "0234906698"
   Const TAS_DEFAULT_SENDER_NAME = "다삼솔루션"
-  Const TAS_KAKAO_TEMPLATE_CODE = "C_KK_013_02_73931"  '// 카카오 알림톡 템플릿 코드
+  Const TAS_KAKAO_TEMPLATE_CODE = "C_KK_013_02_74089"  '// 카카오 알림톡 템플릿 코드
 %>
 <%
   '// ========================================
@@ -907,15 +907,17 @@
                vbLf & _
                "※ 본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다." & vbLf & _
                "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다."
-      '// KTK(카카오톡)용 메시지 - 카카오 알림톡 템플릿(C_KK_013_02_73931)과 일치해야 함
+      '// KTK(카카오톡)용 메시지 - 카카오 알림톡 템플릿(C_KK_013_02_74089)과 일치해야 함
       ktkMsg = "안녕하세요 고객님," & vbLf & _
-               agency_name & "여행사 입니다. 대한항공 ARS 결제 안내드립니다." & vbLf & _
+               agency_name & "여행사 입니다." & vbLf & _
+               "대한항공 ARS 결제 안내드립니다." & vbLf & _
                vbLf & _
                "승객명 : " & cc_name & vbLf & _
                "결제금액 : " & FormatNumberWithComma(totalAmount) & "원" & vbLf & _
                "예약번호 : " & reservation_no & vbLf & _
                "ARS 진행하기 : 02-3490-6698" & vbLf & _
-               "본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다." & vbLf & _
+               vbLf & _
+               "※ 본 문자 수신 하신 후 1시간 이내에 ARS 결제를 진행해 주시기 바랍니다." & vbLf & _
                "※ ARS 접수건은 최대 당일 23시 50분까지 유효합니다."
     Else
       '// 기존 기본 형식 (폴백)
